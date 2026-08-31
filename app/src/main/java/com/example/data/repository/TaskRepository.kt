@@ -1,0 +1,82 @@
+package com.example.data.repository
+
+import com.example.data.db.TaskDao
+import com.example.data.model.TaskEntity
+import kotlinx.coroutines.flow.Flow
+
+class TaskRepository(private val taskDao: TaskDao) {
+
+    val allTasks: Flow<List<TaskEntity>> = taskDao.getAllTasks()
+    val pendingReminders: Flow<List<TaskEntity>> = taskDao.getPendingRemindersFlow()
+    val trashTasks: Flow<List<TaskEntity>> = taskDao.getTrashTasks()
+    val trashCount: Flow<Int> = taskDao.getTrashCount()
+
+    fun getTasksForUser(userId: Long): Flow<List<TaskEntity>> {
+        return taskDao.getTasksForUser(userId)
+    }
+
+    fun getTrashForUser(userId: Long): Flow<List<TaskEntity>> {
+        return taskDao.getTrashTasksForUser(userId)
+    }
+
+    fun getTrashCountForUser(userId: Long): Flow<Int> {
+        return taskDao.getTrashCountForUser(userId)
+    }
+
+    fun getTasksByDateRange(startDate: Long, endDate: Long): Flow<List<TaskEntity>> {
+        return taskDao.getTasksByDateRange(startDate, endDate)
+    }
+
+    fun getTasksByDateRangeForUser(userId: Long, startDate: Long, endDate: Long): Flow<List<TaskEntity>> {
+        return taskDao.getTasksByDateRangeForUser(userId, startDate, endDate)
+    }
+
+    fun getTaskById(id: Long): Flow<TaskEntity?> {
+        return taskDao.getTaskById(id)
+    }
+
+    suspend fun getTaskByIdDirect(id: Long): TaskEntity? {
+        return taskDao.getTaskByIdDirect(id)
+    }
+
+    suspend fun getPendingRemindersDirect(): List<TaskEntity> {
+        return taskDao.getPendingRemindersDirect()
+    }
+
+    suspend fun insertTask(task: TaskEntity): Long {
+        return taskDao.insertTask(task)
+    }
+
+    suspend fun updateTask(task: TaskEntity) {
+        taskDao.updateTask(task.copy(updatedAt = System.currentTimeMillis()))
+    }
+
+    suspend fun moveToTrash(id: Long) {
+        taskDao.moveToTrash(id)
+    }
+
+    suspend fun restoreFromTrash(id: Long) {
+        taskDao.restoreFromTrash(id)
+    }
+
+    suspend fun emptyTrashForUser(userId: Long) {
+        taskDao.emptyTrashForUser(userId)
+    }
+
+    suspend fun emptyTrash() {
+        taskDao.emptyTrash()
+    }
+
+    suspend fun deleteTask(task: TaskEntity) {
+        taskDao.deleteTask(task)
+    }
+
+    suspend fun deleteTaskById(id: Long) {
+        taskDao.deleteTaskById(id)
+    }
+
+    suspend fun toggleTaskCompleted(id: Long, completed: Boolean) {
+        val completedAt = if (completed) System.currentTimeMillis() else null
+        taskDao.setTaskCompleted(id, completed, completedAt)
+    }
+}

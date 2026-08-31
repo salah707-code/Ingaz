@@ -1,11 +1,36 @@
-<div align="center">
+# تطبيق إنجاز (Enjaz Task Manager)
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+تطبيق أندرويد متكامل وعصري لإدارة المهام اليومية، التذكيرات والملاحظات مبني بالكامل باستخدام **Jetpack Compose**، **Kotlin**، و **Room Database**.
 
-  <h1>Built with AI Studio</h2>
+---
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+## 🌟 المميزات الرئيسية (Key Features)
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+- 📝 **إدارة المهام والملاحظات**: إضافة وتعديل وحذف المهام مع دعم نمط الملاحظات (Notes View) والقوائم والشبكة.
+- ⏰ **نظام تنبيهات متقدم**: تنبيهات دقيقة مستقلة مع دعم التكرار (يومي، أسبوعي، شهري).
+- 🗑️ **سلة مهملات آمنة**: تأكيد قبل الحذف مع إمكانية استعادة المهام المحذوفة أو إفراغ السلة.
+- 📱 **ويدجت الشاشة الرئيسية (App Widget)**: متابعة سريعة لمهام اليوم وإمكانية إضافة المهام بنقرة واحدة.
+- 🎨 **تخصيص شامل**:
+  - خطوط عربية متعددة (النسخ، الكوفي، الرقعة، الكلاسيكي، Monospace).
+  - سمات ألوان متنوعة ووضع ليلي/نهاري متناسق.
+  - تخصيص شكل وحجم حواف وظلال وحدود البطاقات.
+- 👤 **تسجيل دخول مرن**: دعم حسابات المستخدمين مع خيار الدخول الفوري بحساب ضيف (بدون إيميل).
+- 🔒 **حفظ محلي فائق السرعة**: تخزين محلي غير متصل بالإنترنت باستخدام Room SQLite.
 
-</div>
+---
+
+## 🛠️ التقنيات المستخدمة (Tech Stack)
+
+- **Language:** Kotlin
+- **UI Framework:** Jetpack Compose (Material 3)
+- **Local Persistence:** Room Database + Jetpack DataStore Preferences
+- **Architecture:** MVVM (Model - View - ViewModel) + Clean Flow architecture
+- **Build System:** Gradle (Kotlin DSL - `.gradle.kts`)
+
+---
+
+## 🚀 كيفية التشغيل (How to Build & Run)
+
+1. افتح المشروع في **Android Studio** (Ladybug / Koala أو أحدث).
+2. قم بمزامنة ملفات Gradle (Sync Project with Gradle Files).
+3. شغّل المشروع على محاكي أو هاتف أندرويد بنظام Android 8.0 (API 26) فما فوق.
