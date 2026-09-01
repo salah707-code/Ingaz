@@ -31,7 +31,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.outlined.Inbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.CategoryEntity
 import com.example.data.model.TaskEntity
+import com.example.data.model.TaskSortOrder
 import com.example.data.model.TaskStatusFilter
 import com.example.ui.components.CategoryIcons
 import com.example.ui.components.TaskCard
@@ -82,10 +86,12 @@ fun AllTasksScreen(
     val allTasks by viewModel.allTasks.collectAsStateWithLifecycle()
     val categories by viewModel.allCategories.collectAsStateWithLifecycle()
     val preferences by viewModel.userPreferences.collectAsStateWithLifecycle()
+    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedStatus by remember { mutableStateOf(TaskStatusFilter.ALL) }
     var selectedCategoryFilter by remember { mutableStateOf<String?>(null) }
+    var showSortMenu by remember { mutableStateOf(false) }
     var taskToDeleteConfirm by remember { mutableStateOf<TaskEntity?>(null) }
 
     val primaryColor = MaterialTheme.colorScheme.primary
@@ -277,7 +283,7 @@ fun AllTasksScreen(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // Results count
+            // Results count & Sort selector
             item {
                 Row(
                     modifier = Modifier
@@ -292,6 +298,72 @@ fun AllTasksScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
+
+                    // Sort Button & Menu
+                    Box {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                                .clickable { showSortMenu = true }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Sort,
+                                contentDescription = strings.sortBy,
+                                tint = primaryColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = when (sortOrder) {
+                                    TaskSortOrder.PRIORITY_HIGH_FIRST -> strings.priorityHigh
+                                    TaskSortOrder.PRIORITY_LOW_FIRST -> strings.priorityLow
+                                    TaskSortOrder.DATE_TIME -> strings.sortByDateTime
+                                    TaskSortOrder.ALPHABETICAL -> strings.sortByAlpha
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = primaryColor,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(strings.sortByPriority + " (الأعلى أولاً)") },
+                                onClick = {
+                                    viewModel.setSortOrder(TaskSortOrder.PRIORITY_HIGH_FIRST)
+                                    showSortMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(strings.sortByPriority + " (الأقل أولاً)") },
+                                onClick = {
+                                    viewModel.setSortOrder(TaskSortOrder.PRIORITY_LOW_FIRST)
+                                    showSortMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(strings.sortByDateTime) },
+                                onClick = {
+                                    viewModel.setSortOrder(TaskSortOrder.DATE_TIME)
+                                    showSortMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(strings.sortByAlpha) },
+                                onClick = {
+                                    viewModel.setSortOrder(TaskSortOrder.ALPHABETICAL)
+                                    showSortMenu = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
 

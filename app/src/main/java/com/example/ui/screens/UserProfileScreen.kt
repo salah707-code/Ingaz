@@ -444,8 +444,8 @@ fun UserProfileScreen(
                         ) {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor, modifier = Modifier.size(20.dp))
                             Text(
-                                text = if (isGuest) {
-                                    if (isArabic) "تعيين كلمة مرور لحماية حسابك" else "Set Password for App Security"
+                                text = if (!preferences.hasAppPassword) {
+                                    if (isArabic) "تعيين كلمة مرور لقفل التطبيق" else "Set App Password Lock"
                                 } else {
                                     strings.changePassword
                                 },
@@ -458,10 +458,10 @@ fun UserProfileScreen(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = if (isGuest) {
-                                if (isArabic) "أنت مسجل حالياً كضيف، يمكنك تعيين كلمة مرور الآن لحفظ وتأمين بياناتك." else "You are signed in as guest. Set a password to protect your account."
+                            text = if (!preferences.hasAppPassword) {
+                                if (isArabic) "لم يتم تعيين كلمة مرور بعد. يمكنك تعيين كلمة مرور الآن لقفل التطبيق وحماية مهامك." else "No password set yet. You can set a password now to lock the app."
                             } else {
-                                if (isArabic) "تغيير كلمة المرور الخاصة بحسابك لحماية إنجازاتك وبياناتك." else "Change your password to keep your tasks and account secure."
+                                if (isArabic) "تغيير كلمة المرور الخاصة بحسابك وقفل التطبيق." else "Change your password lock."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -469,8 +469,8 @@ fun UserProfileScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Current Password (only needed if already registered user)
-                        if (!isGuest) {
+                        // Current Password (only needed if password is set)
+                        if (preferences.hasAppPassword) {
                             OutlinedTextField(
                                 value = oldPassword,
                                 onValueChange = {
@@ -511,7 +511,7 @@ fun UserProfileScreen(
                                 newPassword = it
                                 passError = ""
                             },
-                            label = { Text(if (isGuest) (if (isArabic) "كلمة المرور الجديدة" else "New Password") else strings.newPassword) },
+                            label = { Text(if (!preferences.hasAppPassword) (if (isArabic) "كلمة المرور الجديدة" else "New Password") else strings.newPassword) },
                             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor) },
                             trailingIcon = {
                                 IconButton(onClick = { showNewPass = !showNewPass }) {
@@ -599,7 +599,7 @@ fun UserProfileScreen(
                         Button(
                             onClick = {
                                 focusManager.clearFocus()
-                                if (!isGuest && oldPassword.isBlank()) {
+                                if (preferences.hasAppPassword && oldPassword.isBlank()) {
                                     passError = if (isArabic) "يرجى إدخال كلمة المرور الحالية" else "Please enter current password"
                                     return@Button
                                 }

@@ -137,8 +137,13 @@ data class UserPreferences(
     val userAddress: String = "",
     val userJobTitle: String = "",
     val userAvatarIndex: Int = 0,
-    val userAvatarColor: Long = 0xFF4F46E5
-)
+    val userAvatarColor: Long = 0xFF4F46E5,
+    val appPasswordHash: String = "",
+    val appPasswordSalt: String = ""
+) {
+    val hasAppPassword: Boolean
+        get() = appPasswordHash.isNotBlank()
+}
 
 class UserPreferencesRepository(private val context: Context) {
 
@@ -165,6 +170,8 @@ class UserPreferencesRepository(private val context: Context) {
         val USER_JOB_TITLE = stringPreferencesKey("user_job_title")
         val USER_AVATAR_INDEX = intPreferencesKey("user_avatar_index")
         val USER_AVATAR_COLOR = longPreferencesKey("user_avatar_color")
+        val APP_PASSWORD_HASH = stringPreferencesKey("app_password_hash")
+        val APP_PASSWORD_SALT = stringPreferencesKey("app_password_salt")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -225,6 +232,8 @@ class UserPreferencesRepository(private val context: Context) {
         val userJobTitle = prefs[PreferenceKeys.USER_JOB_TITLE] ?: ""
         val userAvatarIndex = prefs[PreferenceKeys.USER_AVATAR_INDEX] ?: 0
         val userAvatarColor = prefs[PreferenceKeys.USER_AVATAR_COLOR] ?: 0xFF4F46E5
+        val appPasswordHash = prefs[PreferenceKeys.APP_PASSWORD_HASH] ?: ""
+        val appPasswordSalt = prefs[PreferenceKeys.APP_PASSWORD_SALT] ?: ""
 
         UserPreferences(
             themeMode = themeMode,
@@ -248,8 +257,24 @@ class UserPreferencesRepository(private val context: Context) {
             userAddress = userAddress,
             userJobTitle = userJobTitle,
             userAvatarIndex = userAvatarIndex,
-            userAvatarColor = userAvatarColor
+            userAvatarColor = userAvatarColor,
+            appPasswordHash = appPasswordHash,
+            appPasswordSalt = appPasswordSalt
         )
+    }
+
+    suspend fun setAppPassword(hash: String, salt: String) {
+        context.dataStore.edit {
+            it[PreferenceKeys.APP_PASSWORD_HASH] = hash
+            it[PreferenceKeys.APP_PASSWORD_SALT] = salt
+        }
+    }
+
+    suspend fun clearAppPassword() {
+        context.dataStore.edit {
+            it[PreferenceKeys.APP_PASSWORD_HASH] = ""
+            it[PreferenceKeys.APP_PASSWORD_SALT] = ""
+        }
     }
 
     suspend fun setThemeMode(mode: ThemeMode) {

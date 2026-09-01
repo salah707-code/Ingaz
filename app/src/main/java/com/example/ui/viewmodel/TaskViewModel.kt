@@ -27,11 +27,13 @@ import com.example.data.repository.CategoryRepository
 import com.example.data.repository.TaskRepository
 import com.example.data.repository.UserRepository
 import com.example.reminder.ReminderScheduler
+import com.example.security.PasswordSecurity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -48,9 +50,17 @@ class TaskViewModel(
     val userPreferences: StateFlow<UserPreferences> = userPreferencesRepository.userPreferencesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences())
 
-    val allTasks: StateFlow<List<TaskEntity>> = userPreferencesRepository.userPreferencesFlow
-        .flatMapLatest { prefs -> taskRepository.getTasksForUser(prefs.userId) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _sortOrder = MutableStateFlow(TaskSortOrder.DATE_TIME)
+    val sortOrder: StateFlow<TaskSortOrder> = _sortOrder.asStateFlow()
+
+    val allTasks: StateFlow<List<TaskEntity>> = combine(
+        userPreferencesRepository.userPreferencesFlow.flatMapLatest { prefs ->
+            taskRepository.getTasksForUser(prefs.userId)
+        },
+        _sortOrder
+    ) { tasks, order ->
+        sortTasksList(tasks, order)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val trashTasks: StateFlow<List<TaskEntity>> = userPreferencesRepository.userPreferencesFlow
         .flatMapLatest { prefs -> taskRepository.getTrashForUser(prefs.userId) }
@@ -62,9 +72,6 @@ class TaskViewModel(
 
     val allCategories: StateFlow<List<CategoryEntity>> = categoryRepository.allCategories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    private val _sortOrder = MutableStateFlow(TaskSortOrder.DATE_TIME)
-    val sortOrder: StateFlow<TaskSortOrder> = _sortOrder.asStateFlow()
 
     private val _lastDeletedTask = MutableStateFlow<TaskEntity?>(null)
     val lastDeletedTask: StateFlow<TaskEntity?> = _lastDeletedTask.asStateFlow()
@@ -78,6 +85,34 @@ class TaskViewModel(
 
     fun setSortOrder(order: TaskSortOrder) {
         _sortOrder.value = order
+    }
+
+    fun sortTasksList(tasks: List<TaskEntity>, order: TaskSortOrder): List<TaskEntity> {
+        return when (order) {
+            TaskSortOrder.DATE_TIME -> tasks.sortedWith(
+                compareBy<TaskEntity> { it.isCompleted }
+                    .thenBy { it.date }
+                    .thenBy { if (it.timeHour >= 0) it.timeHour * 60 + it.timeMinute else 24 * 60 }
+                    .thenBy { it.id }
+            )
+            TaskSortOrder.PRIORITY_HIGH_FIRST -> tasks.sortedWith(
+                compareBy<TaskEntity> { it.isCompleted }
+                    .thenByDescending { it.priority.weight }
+                    .thenBy { it.date }
+                    .thenBy { if (it.timeHour >= 0) it.timeHour * 60 + it.timeMinute else 24 * 60 }
+            )
+            TaskSortOrder.PRIORITY_LOW_FIRST -> tasks.sortedWith(
+                compareBy<TaskEntity> { it.isCompleted }
+                    .thenBy { it.priority.weight }
+                    .thenBy { it.date }
+                    .thenBy { if (it.timeHour >= 0) it.timeHour * 60 + it.timeMinute else 24 * 60 }
+            )
+            TaskSortOrder.ALPHABETICAL -> tasks.sortedWith(
+                compareBy<TaskEntity> { it.isCompleted }
+                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.title.trim() }
+                    .thenBy { it.date }
+            )
+        }
     }
 
     fun insertTask(task: TaskEntity) {
@@ -294,32 +329,89 @@ class TaskViewModel(
         return true
     }
 
-    suspend fun changePassword(oldPass: String, newPass: String): AuthResult {
-        val userId = userPreferences.value.userId
-        if (userId <= 0) {
-            val email = if (userPreferences.value.userEmail.isNotBlank() && userPreferences.value.userEmail != "guest@enjaz.app") {
-                userPreferences.value.userEmail
-            } else {
-                "user_${System.currentTimeMillis()}@enjaz.app"
-            }
-            val name = if (userPreferences.value.userName.isNotBlank()) userPreferences.value.userName else "مستخدم إنجاز"
-            val regResult = userRepository.register(name, email, newPass)
-            if (regResult is AuthResult.Success) {
+    suspend fun unlockWithPassword(enteredPass: String): Boolean {
+        val prefs = userPreferences.value
+        if (prefs.appPasswordHash.isNotBlank()) {
+            val valid = PasswordSecurity.verifyPassword(enteredPass, prefs.appPasswordSalt, prefs.appPasswordHash)
+            if (valid) {
                 userPreferencesRepository.setUserSession(
                     isLoggedIn = true,
-                    userId = regResult.user.id,
-                    name = regResult.user.displayName,
-                    email = regResult.user.email,
-                    phone = regResult.user.phoneNumber,
-                    address = regResult.user.address,
-                    jobTitle = regResult.user.jobTitle,
-                    avatarIndex = regResult.user.avatarIndex,
-                    avatarColor = regResult.user.avatarColor
+                    userId = if (prefs.userId != 0L) prefs.userId else 1L,
+                    name = if (prefs.userName.isNotBlank()) prefs.userName else "مستخدم إنجاز",
+                    email = prefs.userEmail,
+                    phone = prefs.userPhone,
+                    address = prefs.userAddress,
+                    jobTitle = prefs.userJobTitle,
+                    avatarIndex = prefs.userAvatarIndex,
+                    avatarColor = prefs.userAvatarColor
                 )
+                return true
             }
-            return regResult
+            return false
         }
-        return userRepository.changePassword(userId, oldPass, newPass)
+        // If no password set yet, enter immediately
+        userPreferencesRepository.setUserSession(
+            isLoggedIn = true,
+            userId = if (prefs.userId != 0L) prefs.userId else 1L,
+            name = if (prefs.userName.isNotBlank()) prefs.userName else "مستخدم إنجاز",
+            email = prefs.userEmail,
+            phone = prefs.userPhone,
+            address = prefs.userAddress,
+            jobTitle = prefs.userJobTitle,
+            avatarIndex = prefs.userAvatarIndex,
+            avatarColor = prefs.userAvatarColor
+        )
+        return true
+    }
+
+    suspend fun setAppPassword(newPass: String): Boolean {
+        val salt = PasswordSecurity.generateSalt()
+        val hash = PasswordSecurity.hashPassword(newPass, salt)
+        userPreferencesRepository.setAppPassword(hash, salt)
+        val prefs = userPreferences.value
+        userPreferencesRepository.setUserSession(
+            isLoggedIn = true,
+            userId = if (prefs.userId != 0L) prefs.userId else 1L,
+            name = if (prefs.userName.isNotBlank()) prefs.userName else "مستخدم إنجاز",
+            email = prefs.userEmail,
+            phone = prefs.userPhone,
+            address = prefs.userAddress,
+            jobTitle = prefs.userJobTitle,
+            avatarIndex = prefs.userAvatarIndex,
+            avatarColor = prefs.userAvatarColor
+        )
+        return true
+    }
+
+    suspend fun removeAppPassword() {
+        userPreferencesRepository.clearAppPassword()
+    }
+
+    suspend fun changePassword(oldPass: String, newPass: String): AuthResult {
+        val prefs = userPreferences.value
+        if (prefs.appPasswordHash.isNotBlank()) {
+            val isOldValid = PasswordSecurity.verifyPassword(oldPass, prefs.appPasswordSalt, prefs.appPasswordHash)
+            if (!isOldValid) {
+                return AuthResult.Error("كلمة المرور الحالية غير صحيحة", "Current password is incorrect")
+            }
+        }
+        val salt = PasswordSecurity.generateSalt()
+        val hash = PasswordSecurity.hashPassword(newPass, salt)
+        userPreferencesRepository.setAppPassword(hash, salt)
+        return AuthResult.Success(
+            UserEntity(
+                id = prefs.userId,
+                email = prefs.userEmail,
+                displayName = prefs.userName,
+                phoneNumber = prefs.userPhone,
+                address = prefs.userAddress,
+                jobTitle = prefs.userJobTitle,
+                avatarIndex = prefs.userAvatarIndex,
+                avatarColor = prefs.userAvatarColor,
+                passwordHash = hash,
+                salt = salt
+            )
+        )
     }
 
     fun continueAsGuest() {

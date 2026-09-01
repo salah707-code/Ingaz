@@ -2,39 +2,69 @@ package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.preferences.FontFamilySetting
 import com.example.data.preferences.FontScaleSetting
 
-val googleFontProvider = GoogleFont.Provider(
-    providerAuthority = "com.google.android.gms.fonts",
-    providerPackage = "com.google.android.gms",
-    certificates = R.array.com_google_android_gms_fonts_certs
+val CairoFontFamily = FontFamily(
+    Font(R.font.cairo, weight = FontWeight.Normal),
+    Font(R.font.cairo, weight = FontWeight.Medium),
+    Font(R.font.cairo, weight = FontWeight.SemiBold),
+    Font(R.font.cairo, weight = FontWeight.Bold)
 )
 
-private fun createArabicGoogleFontFamily(name: String, fallback: FontFamily = FontFamily.SansSerif): FontFamily {
-    val googleFont = GoogleFont(name)
-    return FontFamily(
-        Font(googleFont = googleFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
-        Font(googleFont = googleFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
-        Font(googleFont = googleFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
-        Font(googleFont = googleFont, fontProvider = googleFontProvider, weight = FontWeight.Bold)
-    )
-}
+val TajawalFontFamily = FontFamily(
+    Font(R.font.tajawal, weight = FontWeight.Normal),
+    Font(R.font.tajawal, weight = FontWeight.Medium),
+    Font(R.font.tajawal_bold, weight = FontWeight.SemiBold),
+    Font(R.font.tajawal_bold, weight = FontWeight.Bold)
+)
 
-val CairoFontFamily = createArabicGoogleFontFamily("Cairo")
-val TajawalFontFamily = createArabicGoogleFontFamily("Tajawal")
-val AlmaraiFontFamily = createArabicGoogleFontFamily("Almarai")
-val AmiriFontFamily = createArabicGoogleFontFamily("Amiri", FontFamily.Serif)
-val ReadexProFontFamily = createArabicGoogleFontFamily("Readex Pro")
-val ArefRuqaaFontFamily = createArabicGoogleFontFamily("Aref Ruqaa", FontFamily.Cursive)
-val ReemKufiFontFamily = createArabicGoogleFontFamily("Reem Kufi")
-val IbmsPlexArabicFontFamily = createArabicGoogleFontFamily("IBM Plex Sans Arabic")
+val AlmaraiFontFamily = FontFamily(
+    Font(R.font.almarai, weight = FontWeight.Normal),
+    Font(R.font.almarai, weight = FontWeight.Medium),
+    Font(R.font.almarai_bold, weight = FontWeight.SemiBold),
+    Font(R.font.almarai_bold, weight = FontWeight.Bold)
+)
+
+val AmiriFontFamily = FontFamily(
+    Font(R.font.amiri, weight = FontWeight.Normal),
+    Font(R.font.amiri, weight = FontWeight.Medium),
+    Font(R.font.amiri_bold, weight = FontWeight.SemiBold),
+    Font(R.font.amiri_bold, weight = FontWeight.Bold)
+)
+
+val ReadexProFontFamily = FontFamily(
+    Font(R.font.readex_pro, weight = FontWeight.Normal),
+    Font(R.font.readex_pro, weight = FontWeight.Medium),
+    Font(R.font.readex_pro, weight = FontWeight.SemiBold),
+    Font(R.font.readex_pro, weight = FontWeight.Bold)
+)
+
+val ArefRuqaaFontFamily = FontFamily(
+    Font(R.font.aref_ruqaa, weight = FontWeight.Normal),
+    Font(R.font.aref_ruqaa, weight = FontWeight.Medium),
+    Font(R.font.aref_ruqaa_bold, weight = FontWeight.SemiBold),
+    Font(R.font.aref_ruqaa_bold, weight = FontWeight.Bold)
+)
+
+val ReemKufiFontFamily = FontFamily(
+    Font(R.font.reem_kufi, weight = FontWeight.Normal),
+    Font(R.font.reem_kufi, weight = FontWeight.Medium),
+    Font(R.font.reem_kufi, weight = FontWeight.SemiBold),
+    Font(R.font.reem_kufi, weight = FontWeight.Bold)
+)
+
+val IbmsPlexArabicFontFamily = FontFamily(
+    Font(R.font.ibm_plex_arabic, weight = FontWeight.Normal),
+    Font(R.font.ibm_plex_arabic, weight = FontWeight.Medium),
+    Font(R.font.ibm_plex_arabic_bold, weight = FontWeight.SemiBold),
+    Font(R.font.ibm_plex_arabic_bold, weight = FontWeight.Bold)
+)
 
 fun FontFamilySetting.toComposeFontFamily(): FontFamily = when (this) {
     FontFamilySetting.DEFAULT -> FontFamily.Default
