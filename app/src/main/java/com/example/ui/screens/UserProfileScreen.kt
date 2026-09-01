@@ -49,6 +49,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -639,6 +640,30 @@ fun UserProfileScreen(
                                 Text(
                                     text = if (isGuest) (if (isArabic) "حفظ وتفعيل كلمة المرور" else "Save & Set Password") else strings.changePassword,
                                     fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        if (preferences.hasAppPassword) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    scope.launch {
+                                        viewModel.removeAppPassword()
+                                        Toast.makeText(
+                                            context,
+                                            if (isArabic) "تمت إزالة قفل كلمة المرور بنجاح، ملفك الشخصي ومهامك محفوظة" else "Password lock removed successfully",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().height(44.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = if (isArabic) "إلغاء قفل التطبيق (الدخول بدون كلمة مرور)" else "Remove App Password Lock",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
                             }
                         }

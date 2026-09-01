@@ -336,8 +336,8 @@ class TaskViewModel(
             if (valid) {
                 userPreferencesRepository.setUserSession(
                     isLoggedIn = true,
-                    userId = if (prefs.userId != 0L) prefs.userId else 1L,
-                    name = if (prefs.userName.isNotBlank()) prefs.userName else "مستخدم إنجاز",
+                    userId = prefs.userId,
+                    name = prefs.userName,
                     email = prefs.userEmail,
                     phone = prefs.userPhone,
                     address = prefs.userAddress,
@@ -352,8 +352,8 @@ class TaskViewModel(
         // If no password set yet, enter immediately
         userPreferencesRepository.setUserSession(
             isLoggedIn = true,
-            userId = if (prefs.userId != 0L) prefs.userId else 1L,
-            name = if (prefs.userName.isNotBlank()) prefs.userName else "مستخدم إنجاز",
+            userId = prefs.userId,
+            name = prefs.userName,
             email = prefs.userEmail,
             phone = prefs.userPhone,
             address = prefs.userAddress,
@@ -371,8 +371,8 @@ class TaskViewModel(
         val prefs = userPreferences.value
         userPreferencesRepository.setUserSession(
             isLoggedIn = true,
-            userId = if (prefs.userId != 0L) prefs.userId else 1L,
-            name = if (prefs.userName.isNotBlank()) prefs.userName else "مستخدم إنجاز",
+            userId = prefs.userId,
+            name = prefs.userName,
             email = prefs.userEmail,
             phone = prefs.userPhone,
             address = prefs.userAddress,

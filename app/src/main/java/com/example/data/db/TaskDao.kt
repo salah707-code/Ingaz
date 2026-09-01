@@ -12,13 +12,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TaskDao {
 
-    @Query("SELECT * FROM tasks WHERE isDeleted = 0 AND userId = :userId ORDER BY isCompleted ASC, date ASC, timeHour ASC, timeMinute ASC, id DESC")
+    @Query("SELECT * FROM tasks WHERE isDeleted = 0 AND (:userId = 0 OR :userId = -1 OR userId = :userId OR userId = 0 OR userId = -1) ORDER BY isCompleted ASC, date ASC, timeHour ASC, timeMinute ASC, id DESC")
     fun getTasksForUser(userId: Long): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE isDeleted = 0 ORDER BY isCompleted ASC, date ASC, timeHour ASC, timeMinute ASC, id DESC")
     fun getAllTasks(): Flow<List<TaskEntity>>
 
-    @Query("SELECT * FROM tasks WHERE isDeleted = 0 AND userId = :userId AND date >= :startDate AND date <= :endDate ORDER BY isCompleted ASC, timeHour ASC, timeMinute ASC, id DESC")
+    @Query("SELECT * FROM tasks WHERE isDeleted = 0 AND (:userId = 0 OR :userId = -1 OR userId = :userId OR userId = 0 OR userId = -1) AND date >= :startDate AND date <= :endDate ORDER BY isCompleted ASC, timeHour ASC, timeMinute ASC, id DESC")
     fun getTasksByDateRangeForUser(userId: Long, startDate: Long, endDate: Long): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE isDeleted = 0 AND date >= :startDate AND date <= :endDate ORDER BY isCompleted ASC, timeHour ASC, timeMinute ASC, id DESC")
@@ -36,13 +36,13 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE isDeleted = 0 AND isCompleted = 0 AND reminderType != 'NONE'")
     suspend fun getPendingRemindersDirect(): List<TaskEntity>
 
-    @Query("SELECT * FROM tasks WHERE isDeleted = 1 AND userId = :userId ORDER BY deletedAt DESC, id DESC")
+    @Query("SELECT * FROM tasks WHERE isDeleted = 1 AND (:userId = 0 OR :userId = -1 OR userId = :userId OR userId = 0 OR userId = -1) ORDER BY deletedAt DESC, id DESC")
     fun getTrashTasksForUser(userId: Long): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE isDeleted = 1 ORDER BY deletedAt DESC, id DESC")
     fun getTrashTasks(): Flow<List<TaskEntity>>
 
-    @Query("SELECT COUNT(*) FROM tasks WHERE isDeleted = 1 AND userId = :userId")
+    @Query("SELECT COUNT(*) FROM tasks WHERE isDeleted = 1 AND (:userId = 0 OR :userId = -1 OR userId = :userId OR userId = 0 OR userId = -1)")
     fun getTrashCountForUser(userId: Long): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM tasks WHERE isDeleted = 1")
