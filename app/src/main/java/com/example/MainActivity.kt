@@ -184,7 +184,7 @@ class MainActivity : ComponentActivity() {
                         AppScreen.SPLASH -> {
                             SplashScreen(
                                 onFinished = {
-                                    currentScreen = AppScreen.MAIN
+                                    currentScreen = if (userPreferences.isLoggedIn) AppScreen.MAIN else AppScreen.LOGIN
                                 }
                             )
                         }

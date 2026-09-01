@@ -4,17 +4,48 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.preferences.FontFamilySetting
 import com.example.data.preferences.FontScaleSetting
 
+val googleFontProvider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
+)
+
+private fun createArabicGoogleFontFamily(name: String, fallback: FontFamily = FontFamily.SansSerif): FontFamily {
+    val googleFont = GoogleFont(name)
+    return FontFamily(
+        Font(googleFont = googleFont, fontProvider = googleFontProvider, weight = FontWeight.Normal),
+        Font(googleFont = googleFont, fontProvider = googleFontProvider, weight = FontWeight.Medium),
+        Font(googleFont = googleFont, fontProvider = googleFontProvider, weight = FontWeight.SemiBold),
+        Font(googleFont = googleFont, fontProvider = googleFontProvider, weight = FontWeight.Bold)
+    )
+}
+
+val CairoFontFamily = createArabicGoogleFontFamily("Cairo")
+val TajawalFontFamily = createArabicGoogleFontFamily("Tajawal")
+val AlmaraiFontFamily = createArabicGoogleFontFamily("Almarai")
+val AmiriFontFamily = createArabicGoogleFontFamily("Amiri", FontFamily.Serif)
+val ReadexProFontFamily = createArabicGoogleFontFamily("Readex Pro")
+val ArefRuqaaFontFamily = createArabicGoogleFontFamily("Aref Ruqaa", FontFamily.Cursive)
+val ReemKufiFontFamily = createArabicGoogleFontFamily("Reem Kufi")
+val IbmsPlexArabicFontFamily = createArabicGoogleFontFamily("IBM Plex Sans Arabic")
+
 fun FontFamilySetting.toComposeFontFamily(): FontFamily = when (this) {
     FontFamilySetting.DEFAULT -> FontFamily.Default
-    FontFamilySetting.NASKH -> FontFamily.SansSerif
-    FontFamilySetting.KUFIC -> FontFamily.SansSerif
-    FontFamilySetting.TRADITIONAL_SERIF -> FontFamily.Serif
-    FontFamilySetting.RUQAH -> FontFamily.Cursive
-    FontFamilySetting.MONOSPACE -> FontFamily.Monospace
+    FontFamilySetting.CAIRO, FontFamilySetting.NASKH -> CairoFontFamily
+    FontFamilySetting.TAJAWAL -> TajawalFontFamily
+    FontFamilySetting.ALMARAI -> AlmaraiFontFamily
+    FontFamilySetting.AMIRI, FontFamilySetting.TRADITIONAL_SERIF -> AmiriFontFamily
+    FontFamilySetting.READEX_PRO -> ReadexProFontFamily
+    FontFamilySetting.AREF_RUQAA, FontFamilySetting.RUQAH -> ArefRuqaaFontFamily
+    FontFamilySetting.REEM_KUFI, FontFamilySetting.KUFIC -> ReemKufiFontFamily
+    FontFamilySetting.IBM_PLEX_ARABIC, FontFamilySetting.MONOSPACE -> IbmsPlexArabicFontFamily
 }
 
 fun getAppTypography(

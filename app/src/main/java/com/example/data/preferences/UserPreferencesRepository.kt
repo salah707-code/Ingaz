@@ -40,13 +40,27 @@ enum class PrimaryColorPreset(val colorValue: Long, val nameAr: String, val name
     CUSTOM(0xFF4F46E5, "لون مخصص (منتقي الألوان)", "Custom Color")
 }
 
-enum class FontFamilySetting(val titleAr: String, val titleEn: String, val previewAr: String, val previewEn: String) {
-    DEFAULT("الخط القياسي (النظام)", "System Default", "إنجاز مهامك اليومية بذكاء", "Smart Task Management"),
-    NASKH("خط النسخ الحديث (واضح ومريح)", "Modern Naskh (Sans-Serif)", "تصميم عصري بخط النسخ الواضح والمريح للعين", "Clean, modern and readable typography"),
-    KUFIC("الخط الكوفي الهندسي (أنيق وعصري)", "Geometric Kufic", "خط كوفي حديث يتميز بالهيبة والأناقة", "Modern Geometric Kufic style"),
-    TRADITIONAL_SERIF("الخط العربي الكلاسيكي (سيريف)", "Classic Traditional (Serif)", "أناقة الحروف الكلاسيكية الفخمة المتزنة", "Timeless, elegant serif typography"),
-    RUQAH("خط الرقعة الفني (انسيابي)", "Artistic Ruqah (Cursive)", "لمسة فنية مميزة بانسيابية خط الرقعة الجميل", "Creative flowing handwritten style"),
-    MONOSPACE("الخط التقني المتناسق (Monospace)", "Technical Monospace", "أرقام ونصوص متناسقة هندسياً بدقة", "Code & tech aesthetic monospaced")
+enum class FontFamilySetting(
+    val titleAr: String,
+    val titleEn: String,
+    val fontName: String,
+    val previewAr: String,
+    val previewEn: String
+) {
+    DEFAULT("الخط القياسي (النظام)", "System Default", "Default", "إنجاز مهامك اليومية بذكاء وسرعة", "Smart Task Management"),
+    CAIRO("خط كايرو (Cairo - عصري وأنيق)", "Cairo (Modern & Popular)", "Cairo", "خط كايرو الحديث والمريح جداً في القراءة واستعراض المهام", "Modern, readable & elegant Cairo typography"),
+    TAJAWAL("خط تجوال (Tajawal - انسيابي متوازن)", "Tajawal (Geometric Elegance)", "Tajawal", "أناقة خط تجوال الهندسي المتميز بوضوحه وجمال حروفه", "Geometric, stylish and balanced Arabic typeface"),
+    ALMARAI("خط المراعي (Almarai - نقي وسلس)", "Almarai (Clean & Crisp)", "Almarai", "تصميم نقي وعصري بخط المراعي الواضح والمريح للعين", "Clean, crisp modern Arabic typography"),
+    AMIRI("خط الأميري (Amiri - نسخي كلاسيكي فخم)", "Amiri (Classical Naskh)", "Amiri", "أناقة الحروف الكلاسيكية الفخمة بروح الخط النسخي التراثي", "Prestigious classical Naskh typography"),
+    READEX_PRO("خط ريدكس برو (Readex Pro - تقني متناسق)", "Readex Pro (Modern Balanced)", "Readex Pro", "تناسق هندسي بديع وتجربة بصرية فائقة الراحة والوضوح", "Ultra modern geometric typeface"),
+    AREF_RUQAA("خط عارف رقعة (Aref Ruqaa - فني انسيابي)", "Aref Ruqaa (Artistic Ruqah)", "Aref Ruqaa", "لمسة فنية مميزة بروعة وانسيابية خط الرقعة التراثي الجميل", "Creative flowing handwritten Ruqah style"),
+    REEM_KUFI("خط ريم كوفي (Reem Kufi - كوفي هندسي)", "Reem Kufi (Geometric Kufic)", "Reem Kufi", "خط كوفي هندسي عريق يجمع بين الأصالة والحداثة والفخامة", "Authentic modern geometric Kufic style"),
+    IBM_PLEX_ARABIC("خط آي بي إم بلكس (IBM Plex Arabic)", "IBM Plex Arabic (Tech)", "IBM Plex Sans Arabic", "خط تقني احترافي متوازن بدقة عالية للنصوص والبيانات", "Corporate & tech grade Arabic font"),
+    NASKH("خط النسخ الحديث (Cairo)", "Modern Naskh", "Cairo", "تصميم عصري بخط النسخ الواضح والمريح للعين", "Clean, modern and readable typography"),
+    KUFIC("الخط الكوفي الهندسي (Reem Kufi)", "Geometric Kufic", "Reem Kufi", "خط كوفي حديث يتميز بالهيبة والأناقة", "Modern Geometric Kufic style"),
+    TRADITIONAL_SERIF("الخط العربي الكلاسيكي (Amiri)", "Classic Traditional", "Amiri", "أناقة الحروف الكلاسيكية الفخمة المتزنة", "Timeless, elegant serif typography"),
+    RUQAH("خط الرقعة الفني (Aref Ruqaa)", "Artistic Ruqah", "Aref Ruqaa", "لمسة فنية مميزة بانسيابية خط الرقعة الجميل", "Creative flowing handwritten style"),
+    MONOSPACE("الخط التقني المتناسق (IBM Plex)", "Technical Monospace", "IBM Plex Sans Arabic", "أرقام ونصوص متناسقة هندسياً بدقة", "Code & tech aesthetic monospaced")
 }
 
 enum class CardLayoutStyle(val titleAr: String, val titleEn: String) {

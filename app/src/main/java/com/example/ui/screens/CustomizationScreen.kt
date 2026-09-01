@@ -421,8 +421,25 @@ fun CustomizationScreen(
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        FontFamilySetting.values().forEach { familySetting ->
-                            val isSelected = preferences.fontFamily == familySetting
+                        val primaryFonts = listOf(
+                            FontFamilySetting.DEFAULT,
+                            FontFamilySetting.CAIRO,
+                            FontFamilySetting.TAJAWAL,
+                            FontFamilySetting.ALMARAI,
+                            FontFamilySetting.AMIRI,
+                            FontFamilySetting.READEX_PRO,
+                            FontFamilySetting.AREF_RUQAA,
+                            FontFamilySetting.REEM_KUFI,
+                            FontFamilySetting.IBM_PLEX_ARABIC
+                        )
+
+                        primaryFonts.forEach { familySetting ->
+                            val isSelected = preferences.fontFamily == familySetting ||
+                                (familySetting == FontFamilySetting.CAIRO && preferences.fontFamily == FontFamilySetting.NASKH) ||
+                                (familySetting == FontFamilySetting.AMIRI && preferences.fontFamily == FontFamilySetting.TRADITIONAL_SERIF) ||
+                                (familySetting == FontFamilySetting.AREF_RUQAA && preferences.fontFamily == FontFamilySetting.RUQAH) ||
+                                (familySetting == FontFamilySetting.REEM_KUFI && preferences.fontFamily == FontFamilySetting.KUFIC) ||
+                                (familySetting == FontFamilySetting.IBM_PLEX_ARABIC && preferences.fontFamily == FontFamilySetting.MONOSPACE)
                             val compFont = familySetting.toComposeFontFamily()
                             val title = if (isArabic) familySetting.titleAr else familySetting.titleEn
                             val previewText = if (isArabic) familySetting.previewAr else familySetting.previewEn

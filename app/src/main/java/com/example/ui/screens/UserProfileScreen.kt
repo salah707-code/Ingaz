@@ -13,13 +13,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,13 +31,13 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -46,7 +50,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,11 +62,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -92,6 +98,8 @@ fun UserProfileScreen(
     val strings = LocalAppStrings.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val listState = rememberLazyListState()
     val primaryColor = MaterialTheme.colorScheme.primary
 
     var name by remember(preferences) { mutableStateOf(preferences.userName) }
@@ -109,28 +117,36 @@ fun UserProfileScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var showOldPass by remember { mutableStateOf(false) }
     var showNewPass by remember { mutableStateOf(false) }
+    var showConfirmPass by remember { mutableStateOf(false) }
     var passError by remember { mutableStateOf("") }
     var isChangingPass by remember { mutableStateOf(false) }
 
     var isSavingProfile by remember { mutableStateOf(false) }
 
+    val isGuest = preferences.userId <= 0
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding()
             .testTag("user_profile_screen")
     ) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 40.dp)
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding(),
+            contentPadding = PaddingValues(top = 4.dp, bottom = 120.dp)
         ) {
             // Header
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -334,6 +350,7 @@ fun UserProfileScreen(
                             label = { Text(strings.fullName) },
                             leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null) },
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             modifier = Modifier.fillMaxWidth()
                         )
 
@@ -345,7 +362,7 @@ fun UserProfileScreen(
                             onValueChange = { phone = it },
                             label = { Text(strings.phoneNumber) },
                             leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone, imeAction = ImeAction.Next),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -358,6 +375,7 @@ fun UserProfileScreen(
                             onValueChange = { address = it },
                             label = { Text(strings.address) },
                             leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = null) },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -370,6 +388,8 @@ fun UserProfileScreen(
                             onValueChange = { jobTitle = it },
                             label = { Text(strings.jobTitle) },
                             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -407,7 +427,7 @@ fun UserProfileScreen(
                 }
             }
 
-            // Security & Change Password Section
+            // Security & Change Password Section (حماية الحساب وكلمة المرور)
             item {
                 Card(
                     modifier = Modifier
@@ -424,38 +444,65 @@ fun UserProfileScreen(
                         ) {
                             Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor, modifier = Modifier.size(20.dp))
                             Text(
-                                text = strings.changePassword,
+                                text = if (isGuest) {
+                                    if (isArabic) "تعيين كلمة مرور لحماية حسابك" else "Set Password for App Security"
+                                } else {
+                                    strings.changePassword
+                                },
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
-                        // Current Password
-                        OutlinedTextField(
-                            value = oldPassword,
-                            onValueChange = {
-                                oldPassword = it
-                                passError = ""
+                        Text(
+                            text = if (isGuest) {
+                                if (isArabic) "أنت مسجل حالياً كضيف، يمكنك تعيين كلمة مرور الآن لحفظ وتأمين بياناتك." else "You are signed in as guest. Set a password to protect your account."
+                            } else {
+                                if (isArabic) "تغيير كلمة المرور الخاصة بحسابك لحماية إنجازاتك وبياناتك." else "Change your password to keep your tasks and account secure."
                             },
-                            label = { Text(strings.currentPassword) },
-                            leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
-                            trailingIcon = {
-                                IconButton(onClick = { showOldPass = !showOldPass }) {
-                                    Icon(
-                                        imageVector = if (showOldPass) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                        contentDescription = null
-                                    )
-                                }
-                            },
-                            visualTransformation = if (showOldPass) VisualTransformation.None else PasswordVisualTransformation(),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Current Password (only needed if already registered user)
+                        if (!isGuest) {
+                            OutlinedTextField(
+                                value = oldPassword,
+                                onValueChange = {
+                                    oldPassword = it
+                                    passError = ""
+                                },
+                                label = { Text(strings.currentPassword) },
+                                leadingIcon = { Icon(Icons.Default.Key, contentDescription = null, tint = primaryColor) },
+                                trailingIcon = {
+                                    IconButton(onClick = { showOldPass = !showOldPass }) {
+                                        Icon(
+                                            imageVector = if (showOldPass) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = null
+                                        )
+                                    }
+                                },
+                                visualTransformation = if (showOldPass) VisualTransformation.None else PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged { focusState ->
+                                        if (focusState.isFocused) {
+                                            scope.launch {
+                                                listState.animateScrollToItem(3)
+                                            }
+                                        }
+                                    }
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
 
                         // New Password
                         OutlinedTextField(
@@ -464,8 +511,8 @@ fun UserProfileScreen(
                                 newPassword = it
                                 passError = ""
                             },
-                            label = { Text(strings.newPassword) },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                            label = { Text(if (isGuest) (if (isArabic) "كلمة المرور الجديدة" else "New Password") else strings.newPassword) },
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = primaryColor) },
                             trailingIcon = {
                                 IconButton(onClick = { showNewPass = !showNewPass }) {
                                     Icon(
@@ -475,8 +522,17 @@ fun UserProfileScreen(
                                 }
                             },
                             visualTransformation = if (showNewPass) VisualTransformation.None else PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { focusState ->
+                                    if (focusState.isFocused) {
+                                        scope.launch {
+                                            listState.animateScrollToItem(3)
+                                        }
+                                    }
+                                }
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -489,11 +545,45 @@ fun UserProfileScreen(
                                 passError = ""
                             },
                             label = { Text(strings.confirmPassword) },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                            visualTransformation = PasswordVisualTransformation(),
+                            leadingIcon = { Icon(Icons.Default.Shield, contentDescription = null, tint = primaryColor) },
+                            trailingIcon = {
+                                IconButton(onClick = { showConfirmPass = !showConfirmPass }) {
+                                    Icon(
+                                        imageVector = if (showConfirmPass) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = null
+                                    )
+                                }
+                            },
+                            visualTransformation = if (showConfirmPass) VisualTransformation.None else PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { focusState ->
+                                    if (focusState.isFocused) {
+                                        scope.launch {
+                                            listState.animateScrollToItem(3)
+                                        }
+                                    }
+                                }
                         )
+
+                        // Password Match helper
+                        if (newPassword.isNotBlank() && confirmPassword.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            val isMatch = newPassword == confirmPassword
+                            Text(
+                                text = if (isMatch) {
+                                    if (isArabic) "✓ كلمتا المرور متطابقتان" else "✓ Passwords match"
+                                } else {
+                                    if (isArabic) "✕ كلمتا المرور غير متطابقتين" else "✕ Passwords do not match"
+                                },
+                                color = if (isMatch) Color(0xFF10B981) else MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
 
                         if (passError.isNotBlank()) {
                             Spacer(modifier = Modifier.height(8.dp))
@@ -508,12 +598,21 @@ fun UserProfileScreen(
 
                         Button(
                             onClick = {
-                                if (oldPassword.isBlank() || newPassword.isBlank()) {
-                                    passError = if (isArabic) "يرجى ملء جميع حقول كلمة المرور" else "Please fill all password fields"
+                                focusManager.clearFocus()
+                                if (!isGuest && oldPassword.isBlank()) {
+                                    passError = if (isArabic) "يرجى إدخال كلمة المرور الحالية" else "Please enter current password"
+                                    return@Button
+                                }
+                                if (newPassword.isBlank() || confirmPassword.isBlank()) {
+                                    passError = if (isArabic) "يرجى إدخال وتأكيد كلمة المرور الجديدة" else "Please enter and confirm new password"
+                                    return@Button
+                                }
+                                if (newPassword.length < 6) {
+                                    passError = if (isArabic) "كلمة المرور يجب ألا تقل عن 6 خانات" else "Password must be at least 6 characters"
                                     return@Button
                                 }
                                 if (newPassword != confirmPassword) {
-                                    passError = if (isArabic) "كلمة المرور غير متطابقة" else "Passwords do not match"
+                                    passError = if (isArabic) "كلمتا المرور غير متطابقتين" else "Passwords do not match"
                                     return@Button
                                 }
                                 isChangingPass = true
@@ -537,7 +636,10 @@ fun UserProfileScreen(
                             if (isChangingPass) {
                                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
                             } else {
-                                Text(strings.changePassword, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = if (isGuest) (if (isArabic) "حفظ وتفعيل كلمة المرور" else "Save & Set Password") else strings.changePassword,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }

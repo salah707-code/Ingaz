@@ -297,7 +297,27 @@ class TaskViewModel(
     suspend fun changePassword(oldPass: String, newPass: String): AuthResult {
         val userId = userPreferences.value.userId
         if (userId <= 0) {
-            return AuthResult.Error("يرجى تسجيل الدخول أولاً لتغيير كلمة المرور", "Please sign in to change password")
+            val email = if (userPreferences.value.userEmail.isNotBlank() && userPreferences.value.userEmail != "guest@enjaz.app") {
+                userPreferences.value.userEmail
+            } else {
+                "user_${System.currentTimeMillis()}@enjaz.app"
+            }
+            val name = if (userPreferences.value.userName.isNotBlank()) userPreferences.value.userName else "مستخدم إنجاز"
+            val regResult = userRepository.register(name, email, newPass)
+            if (regResult is AuthResult.Success) {
+                userPreferencesRepository.setUserSession(
+                    isLoggedIn = true,
+                    userId = regResult.user.id,
+                    name = regResult.user.displayName,
+                    email = regResult.user.email,
+                    phone = regResult.user.phoneNumber,
+                    address = regResult.user.address,
+                    jobTitle = regResult.user.jobTitle,
+                    avatarIndex = regResult.user.avatarIndex,
+                    avatarColor = regResult.user.avatarColor
+                )
+            }
+            return regResult
         }
         return userRepository.changePassword(userId, oldPass, newPass)
     }
