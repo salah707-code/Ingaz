@@ -194,11 +194,13 @@ fun CalendarScreen(
         }
     }
 
-    // Month name title
+    // Month name title with Hijri month
     val monthYearTitle = remember(displayedCalendar, isArabic) {
         val locale = if (isArabic) Locale("ar") else Locale.ENGLISH
         val formatter = SimpleDateFormat("MMMM yyyy", locale)
-        formatter.format(displayedCalendar.time)
+        val greg = formatter.format(displayedCalendar.time)
+        val hijri = DateTimeUtils.formatHijriDate(displayedCalendar.timeInMillis, isArabic)
+        "$greg • $hijri"
     }
 
     val dayHeaders = if (isArabic) {
@@ -393,9 +395,9 @@ fun CalendarScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = DateTimeUtils.formatDateDisplay(selectedDateMillis, isArabic),
+                            text = DateTimeUtils.formatBothDates(selectedDateMillis, isArabic),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -406,6 +408,8 @@ fun CalendarScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Button(
                         onClick = { onAddTaskForDate(selectedDateMillis) },

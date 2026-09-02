@@ -339,20 +339,158 @@ fun LoginScreen(
 
             // Footer note
             if (hasSetPassword) {
+                var showForgotDialog by remember { mutableStateOf(false) }
+                var securityAnswerInput by remember { mutableStateOf("") }
+                var newPasswordInput by remember { mutableStateOf("") }
+                var resetStep by remember { mutableStateOf(1) } // 1 = Answer Question, 2 = Set New Password
+                var resetError by remember { mutableStateOf<String?>(null) }
+
                 TextButton(
                     onClick = {
-                        coroutineScope.launch {
-                            viewModel.removeAppPassword()
-                            snackbarHostState.showSnackbar(
-                                if (isArabic) "تمت إزالة قفل كلمة المرور بنجاح" else "Password lock removed"
-                            )
-                        }
-                    }
+                        resetStep = 1
+                        securityAnswerInput = ""
+                        newPasswordInput = ""
+                        resetError = null
+                        showForgotDialog = true
+                    },
+                    modifier = Modifier.testTag("forgot_password_button")
                 ) {
                     Text(
-                        text = if (isArabic) "نسيت كلمة المرور؟ (إعادة تعيين القفل)" else "Forgot password? (Reset Lock)",
+                        text = if (isArabic) "نسيت كلمة المرور؟ (الاستعادة بسؤال الأمان)" else "Forgot password? (Security Question)",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                if (showForgotDialog) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showForgotDialog = false },
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(Icons.Default.Shield, contentDescription = null, tint = primaryColor)
+                                Text(
+                                    text = if (isArabic) "إعادة تعيين كلمة المرور" else "Reset Password",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        },
+                        text = {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                if (resetStep == 1) {
+                                    Text(
+                                        text = if (isArabic) "أجب عن سؤال الأمان للتحقق من هويتك:" else "Answer your security question to verify identity:",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    // Display the security question
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(primaryColor.copy(alpha = 0.08f))
+                                            .padding(12.dp)
+                                    ) {
+                                        Text(
+                                            text = "❓ " + userPrefs.securityQuestion.ifBlank {
+                                                if (isArabic) "ما هو اسم مدينتك المفضلة؟" else "What is your favorite city?"
+                                            },
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = primaryColor
+                                        )
+                                    }
+
+                                    OutlinedTextField(
+                                        value = securityAnswerInput,
+                                        onValueChange = {
+                                            securityAnswerInput = it
+                                            resetError = null
+                                        },
+                                        label = { Text(if (isArabic) "الإجابة" else "Answer") },
+                                        placeholder = { Text(if (isArabic) "أدخل إجابة سؤال الأمان" else "Enter security answer") },
+                                        singleLine = true,
+                                        isError = resetError != null,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                } else {
+                                    Text(
+                                        text = if (isArabic) "تم التحقق بنجاح! أدخل كلمة المرور الجديدة:" else "Verified! Enter your new password:",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+
+                                    OutlinedTextField(
+                                        value = newPasswordInput,
+                                        onValueChange = {
+                                            newPasswordInput = it
+                                            resetError = null
+                                        },
+                                        label = { Text(if (isArabic) "كلمة المرور الجديدة" else "New Password") },
+                                        singleLine = true,
+                                        isError = resetError != null,
+                                        visualTransformation = PasswordVisualTransformation(),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+
+                                if (resetError != null) {
+                                    Text(
+                                        text = resetError ?: "",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    if (resetStep == 1) {
+                                        val expectedAnswer = userPrefs.securityAnswer.trim().lowercase()
+                                        val providedAnswer = securityAnswerInput.trim().lowercase()
+
+                                        if (providedAnswer.isBlank()) {
+                                            resetError = if (isArabic) "الرجاء كتابة الإجابة" else "Please enter the answer"
+                                        } else if (expectedAnswer.isNotBlank() && providedAnswer != expectedAnswer) {
+                                            resetError = if (isArabic) "الإجابة غير صحيحة، حاول مجدداً" else "Incorrect answer, try again"
+                                        } else {
+                                            // Answer matches or default accepted
+                                            resetStep = 2
+                                            resetError = null
+                                        }
+                                    } else {
+                                        if (newPasswordInput.isBlank()) {
+                                            resetError = if (isArabic) "الرجاء كتابة كلمة مرور صالحة" else "Please enter a valid password"
+                                        } else {
+                                            coroutineScope.launch {
+                                                viewModel.setAppPassword(newPasswordInput)
+                                                showForgotDialog = false
+                                                snackbarHostState.showSnackbar(
+                                                    if (isArabic) "تم تعيين كلمة المرور الجديدة بنجاح! 🔒" else "New password set successfully! 🔒"
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    text = if (resetStep == 1) {
+                                        if (isArabic) "تحقق" else "Verify"
+                                    } else {
+                                        if (isArabic) "حفظ وتعيين" else "Save & Set"
+                                    }
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            OutlinedButton(onClick = { showForgotDialog = false }) {
+                                Text(if (isArabic) "إلغاء" else "Cancel")
+                            }
+                        }
                     )
                 }
             }

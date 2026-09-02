@@ -57,6 +57,13 @@ import com.example.ui.theme.EnjazTheme
 import com.example.ui.viewmodel.TaskViewModel
 import com.example.ui.viewmodel.TaskViewModelFactory
 
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.delay
+
 enum class AppScreen {
     SPLASH,
     LOGIN,
@@ -125,6 +132,34 @@ class MainActivity : ComponentActivity() {
 
                 // Back button press protection (prevents abrupt closing)
                 var lastBackPressTime by remember { mutableLongStateOf(0L) }
+                val lifecycleOwner = LocalLifecycleOwner.current
+                var lastUserActivityTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+                // Auto-lock when exiting or opening another app (App Backgrounded / ON_STOP)
+                DisposableEffect(lifecycleOwner, userPreferences.isLoggedIn, userPreferences.hasAppPassword) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event == Lifecycle.Event.ON_STOP) {
+                            if (userPreferences.isLoggedIn && (userPreferences.hasAppPassword || userPreferences.isGuestMode) && currentScreen != AppScreen.LOGIN && currentScreen != AppScreen.SPLASH && currentScreen != AppScreen.REGISTER) {
+                                currentScreen = AppScreen.LOGIN
+                            }
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
+                    }
+                }
+
+                // Auto-lock after 2 minutes of inactivity (120,000 ms)
+                LaunchedEffect(userPreferences.isLoggedIn, userPreferences.hasAppPassword, currentScreen) {
+                    while (true) {
+                        delay(5000L)
+                        val idleTime = System.currentTimeMillis() - lastUserActivityTime
+                        if (userPreferences.isLoggedIn && (userPreferences.hasAppPassword || userPreferences.isGuestMode) && idleTime >= 120_000L && currentScreen != AppScreen.LOGIN && currentScreen != AppScreen.SPLASH && currentScreen != AppScreen.REGISTER) {
+                            currentScreen = AppScreen.LOGIN
+                        }
+                    }
+                }
 
                 BackHandler(enabled = true) {
                     when {
@@ -175,11 +210,23 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                AnimatedContent(
-                    targetState = currentScreen,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label = "screen_navigation"
-                ) { screen ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    awaitPointerEvent()
+                                    lastUserActivityTime = System.currentTimeMillis()
+                                }
+                            }
+                        }
+                ) {
+                    AnimatedContent(
+                        targetState = currentScreen,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "screen_navigation"
+                    ) { screen ->
                     when (screen) {
                         AppScreen.SPLASH -> {
                             SplashScreen(
@@ -352,6 +399,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
+                }
                 }
 
                 // Add or Edit Task Bottom Sheet Modal

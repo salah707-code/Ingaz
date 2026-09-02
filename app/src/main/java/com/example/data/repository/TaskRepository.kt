@@ -51,6 +51,10 @@ class TaskRepository(private val taskDao: TaskDao) {
         taskDao.updateTask(task.copy(updatedAt = System.currentTimeMillis()))
     }
 
+    suspend fun updateAllTasks(tasks: List<TaskEntity>) {
+        taskDao.updateAllTasks(tasks)
+    }
+
     suspend fun moveToTrash(id: Long) {
         taskDao.moveToTrash(id)
     }

@@ -89,6 +89,13 @@ class TaskViewModel(
 
     fun sortTasksList(tasks: List<TaskEntity>, order: TaskSortOrder): List<TaskEntity> {
         return when (order) {
+            TaskSortOrder.MANUAL -> tasks.sortedWith(
+                compareBy<TaskEntity> { it.isCompleted }
+                    .thenBy { it.sortIndex }
+                    .thenBy { it.date }
+                    .thenBy { if (it.timeHour >= 0) it.timeHour * 60 + it.timeMinute else 24 * 60 }
+                    .thenBy { it.id }
+            )
             TaskSortOrder.DATE_TIME -> tasks.sortedWith(
                 compareBy<TaskEntity> { it.isCompleted }
                     .thenBy { it.date }
@@ -112,6 +119,29 @@ class TaskViewModel(
                     .thenBy(String.CASE_INSENSITIVE_ORDER) { it.title.trim() }
                     .thenBy { it.date }
             )
+        }
+    }
+
+    fun reorderTasks(fromIndex: Int, toIndex: Int, currentList: List<TaskEntity>) {
+        if (fromIndex == toIndex || fromIndex !in currentList.indices || toIndex !in currentList.indices) return
+        val mutableList = currentList.toMutableList()
+        val item = mutableList.removeAt(fromIndex)
+        mutableList.add(toIndex, item)
+        val updatedList = mutableList.mapIndexed { index, task ->
+            task.copy(sortIndex = index)
+        }
+        _sortOrder.value = TaskSortOrder.MANUAL
+        viewModelScope.launch {
+            taskRepository.updateAllTasks(updatedList)
+        }
+    }
+
+    fun moveTask(task: TaskEntity, moveUp: Boolean, currentList: List<TaskEntity>) {
+        val currentIndex = currentList.indexOfFirst { it.id == task.id }
+        if (currentIndex == -1) return
+        val targetIndex = if (moveUp) currentIndex - 1 else currentIndex + 1
+        if (targetIndex in currentList.indices) {
+            reorderTasks(currentIndex, targetIndex, currentList)
         }
     }
 
@@ -277,7 +307,7 @@ class TaskViewModel(
     }
 
     // Auth & Profile Actions
-    suspend fun registerUser(name: String, email: String, pass: String): AuthResult {
+    suspend fun registerUser(name: String, email: String, pass: String, securityQuestion: String = "", securityAnswer: String = ""): AuthResult {
         val res = userRepository.register(name, email, pass)
         if (res is AuthResult.Success) {
             userPreferencesRepository.setUserSession(
@@ -291,6 +321,9 @@ class TaskViewModel(
                 avatarIndex = res.user.avatarIndex,
                 avatarColor = res.user.avatarColor
             )
+            if (securityQuestion.isNotBlank() && securityAnswer.isNotBlank()) {
+                userPreferencesRepository.setSecurityQuestionAndAnswer(securityQuestion, securityAnswer)
+            }
         }
         return res
     }
@@ -364,10 +397,13 @@ class TaskViewModel(
         return true
     }
 
-    suspend fun setAppPassword(newPass: String): Boolean {
+    suspend fun setAppPassword(newPass: String, question: String = "", answer: String = ""): Boolean {
         val salt = PasswordSecurity.generateSalt()
         val hash = PasswordSecurity.hashPassword(newPass, salt)
         userPreferencesRepository.setAppPassword(hash, salt)
+        if (question.isNotBlank() && answer.isNotBlank()) {
+            userPreferencesRepository.setSecurityQuestionAndAnswer(question, answer)
+        }
         val prefs = userPreferences.value
         userPreferencesRepository.setUserSession(
             isLoggedIn = true,
@@ -380,6 +416,26 @@ class TaskViewModel(
             avatarIndex = prefs.userAvatarIndex,
             avatarColor = prefs.userAvatarColor
         )
+        return true
+    }
+
+    fun setSecurityQuestion(question: String, answer: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.setSecurityQuestionAndAnswer(question, answer)
+        }
+    }
+
+    fun verifySecurityAnswer(enteredAnswer: String): Boolean {
+        val currentAnswer = userPreferences.value.securityAnswer.trim()
+        if (currentAnswer.isBlank()) return true // No answer configured, allow reset
+        return currentAnswer.equals(enteredAnswer.trim(), ignoreCase = true)
+    }
+
+    suspend fun resetPasswordWithSecurityAnswer(answer: String, newPass: String): Boolean {
+        if (!verifySecurityAnswer(answer)) return false
+        val salt = PasswordSecurity.generateSalt()
+        val hash = PasswordSecurity.hashPassword(newPass, salt)
+        userPreferencesRepository.setAppPassword(hash, salt)
         return true
     }
 
@@ -416,17 +472,13 @@ class TaskViewModel(
 
     fun continueAsGuest() {
         viewModelScope.launch {
-            userPreferencesRepository.setUserSession(
-                isLoggedIn = true,
-                userId = -1L,
-                name = "صديق إنجاز",
-                email = "guest@enjaz.app",
-                phone = "",
-                address = "",
-                jobTitle = "عضو مميز",
-                avatarIndex = 0,
-                avatarColor = 0xFF4F46E5
-            )
+            userPreferencesRepository.setGuestMode(true)
+        }
+    }
+
+    fun lockApp() {
+        viewModelScope.launch {
+            userPreferencesRepository.logout()
         }
     }
 

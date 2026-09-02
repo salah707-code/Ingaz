@@ -130,6 +130,7 @@ data class UserPreferences(
     val iconThemeStyle: IconThemeStyle = IconThemeStyle.COLORED_EMOJI,
     val language: AppLanguage = AppLanguage.AR,
     val isLoggedIn: Boolean = false,
+    val isGuestMode: Boolean = false,
     val userId: Long = 0L,
     val userName: String = "",
     val userEmail: String = "",
@@ -139,7 +140,9 @@ data class UserPreferences(
     val userAvatarIndex: Int = 0,
     val userAvatarColor: Long = 0xFF4F46E5,
     val appPasswordHash: String = "",
-    val appPasswordSalt: String = ""
+    val appPasswordSalt: String = "",
+    val securityQuestion: String = "ما هو اسم مدينتك المفضلة؟",
+    val securityAnswer: String = ""
 ) {
     val hasAppPassword: Boolean
         get() = appPasswordHash.isNotBlank()
@@ -162,6 +165,7 @@ class UserPreferencesRepository(private val context: Context) {
         val ICON_THEME_STYLE = stringPreferencesKey("icon_theme_style")
         val LANGUAGE = stringPreferencesKey("language")
         val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+        val IS_GUEST_MODE = booleanPreferencesKey("is_guest_mode")
         val USER_ID = longPreferencesKey("user_id")
         val USER_NAME = stringPreferencesKey("user_name")
         val USER_EMAIL = stringPreferencesKey("user_email")
@@ -172,6 +176,8 @@ class UserPreferencesRepository(private val context: Context) {
         val USER_AVATAR_COLOR = longPreferencesKey("user_avatar_color")
         val APP_PASSWORD_HASH = stringPreferencesKey("app_password_hash")
         val APP_PASSWORD_SALT = stringPreferencesKey("app_password_salt")
+        val SECURITY_QUESTION = stringPreferencesKey("security_question")
+        val SECURITY_ANSWER = stringPreferencesKey("security_answer")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -224,6 +230,7 @@ class UserPreferencesRepository(private val context: Context) {
         }.getOrDefault(AppLanguage.AR)
 
         val isLoggedIn = prefs[PreferenceKeys.IS_LOGGED_IN] ?: false
+        val isGuestMode = prefs[PreferenceKeys.IS_GUEST_MODE] ?: false
         val userId = prefs[PreferenceKeys.USER_ID] ?: 0L
         val userName = prefs[PreferenceKeys.USER_NAME] ?: ""
         val userEmail = prefs[PreferenceKeys.USER_EMAIL] ?: ""
@@ -234,6 +241,8 @@ class UserPreferencesRepository(private val context: Context) {
         val userAvatarColor = prefs[PreferenceKeys.USER_AVATAR_COLOR] ?: 0xFF4F46E5
         val appPasswordHash = prefs[PreferenceKeys.APP_PASSWORD_HASH] ?: ""
         val appPasswordSalt = prefs[PreferenceKeys.APP_PASSWORD_SALT] ?: ""
+        val securityQuestion = prefs[PreferenceKeys.SECURITY_QUESTION] ?: "ما هو اسم مدينتك المفضلة؟"
+        val securityAnswer = prefs[PreferenceKeys.SECURITY_ANSWER] ?: ""
 
         UserPreferences(
             themeMode = themeMode,
@@ -250,6 +259,7 @@ class UserPreferencesRepository(private val context: Context) {
             iconThemeStyle = iconThemeStyle,
             language = language,
             isLoggedIn = isLoggedIn,
+            isGuestMode = isGuestMode,
             userId = userId,
             userName = userName,
             userEmail = userEmail,
@@ -259,7 +269,9 @@ class UserPreferencesRepository(private val context: Context) {
             userAvatarIndex = userAvatarIndex,
             userAvatarColor = userAvatarColor,
             appPasswordHash = appPasswordHash,
-            appPasswordSalt = appPasswordSalt
+            appPasswordSalt = appPasswordSalt,
+            securityQuestion = securityQuestion,
+            securityAnswer = securityAnswer
         )
     }
 
@@ -274,6 +286,20 @@ class UserPreferencesRepository(private val context: Context) {
         context.dataStore.edit {
             it[PreferenceKeys.APP_PASSWORD_HASH] = ""
             it[PreferenceKeys.APP_PASSWORD_SALT] = ""
+        }
+    }
+
+    suspend fun setSecurityQuestionAndAnswer(question: String, answer: String) {
+        context.dataStore.edit {
+            it[PreferenceKeys.SECURITY_QUESTION] = question.trim()
+            it[PreferenceKeys.SECURITY_ANSWER] = answer.trim()
+        }
+    }
+
+    suspend fun setGuestMode(isGuest: Boolean) {
+        context.dataStore.edit {
+            it[PreferenceKeys.IS_GUEST_MODE] = isGuest
+            it[PreferenceKeys.IS_LOGGED_IN] = isGuest
         }
     }
 
@@ -345,6 +371,7 @@ class UserPreferencesRepository(private val context: Context) {
     ) {
         context.dataStore.edit {
             it[PreferenceKeys.IS_LOGGED_IN] = isLoggedIn
+            it[PreferenceKeys.IS_GUEST_MODE] = false
             it[PreferenceKeys.USER_ID] = userId
             it[PreferenceKeys.USER_NAME] = name
             it[PreferenceKeys.USER_EMAIL] = email
@@ -374,17 +401,11 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
+    // Locks or logs out while preserving the user profile info
     suspend fun logout() {
         context.dataStore.edit {
             it[PreferenceKeys.IS_LOGGED_IN] = false
-            it[PreferenceKeys.USER_ID] = 0L
-            it[PreferenceKeys.USER_NAME] = ""
-            it[PreferenceKeys.USER_EMAIL] = ""
-            it[PreferenceKeys.USER_PHONE] = ""
-            it[PreferenceKeys.USER_ADDRESS] = ""
-            it[PreferenceKeys.USER_JOB_TITLE] = ""
-            it[PreferenceKeys.USER_AVATAR_INDEX] = 0
-            it[PreferenceKeys.USER_AVATAR_COLOR] = 0xFF4F46E5
+            it[PreferenceKeys.IS_GUEST_MODE] = false
         }
     }
 }

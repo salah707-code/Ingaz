@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -214,7 +215,7 @@ fun HomeScreen(
 
                             Column {
                                 Text(
-                                    text = DateTimeUtils.formatFullDate(System.currentTimeMillis(), isArabic),
+                                    text = DateTimeUtils.formatBothDates(System.currentTimeMillis(), isArabic),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Normal
@@ -402,6 +403,7 @@ fun HomeScreen(
                             )
                             Text(
                                 text = when (sortOrder) {
+                                    TaskSortOrder.MANUAL -> if (isArabic) "ترتيب يدوي" else "Manual"
                                     TaskSortOrder.PRIORITY_HIGH_FIRST -> strings.priorityHigh
                                     TaskSortOrder.PRIORITY_LOW_FIRST -> strings.priorityLow
                                     TaskSortOrder.DATE_TIME -> strings.sortByDateTime
@@ -418,6 +420,13 @@ fun HomeScreen(
                             onDismissRequest = { showSortMenu = false },
                             modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
+                            DropdownMenuItem(
+                                text = { Text(if (isArabic) "✨ ترتيب يدوي (سحب وإفلات)" else "✨ Manual (Drag & Drop)") },
+                                onClick = {
+                                    viewModel.setSortOrder(TaskSortOrder.MANUAL)
+                                    showSortMenu = false
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text(strings.sortByPriority + " (الأعلى أولاً)") },
                                 onClick = {
@@ -497,10 +506,10 @@ fun HomeScreen(
                     }
                 }
             } else {
-                items(
+                itemsIndexed(
                     items = filteredTasks,
-                    key = { it.id }
-                ) { task ->
+                    key = { _, task -> task.id }
+                ) { index, task ->
                     AnimatedVisibility(
                         visible = true,
                         enter = fadeIn(tween(250)) + slideInVertically(tween(250)),
@@ -513,6 +522,7 @@ fun HomeScreen(
                         ) {
                             TaskCard(
                                 task = task,
+                                taskIndex = index + 1,
                                 onToggleComplete = { isComplete ->
                                     viewModel.toggleTaskComplete(task, isComplete)
                                 },

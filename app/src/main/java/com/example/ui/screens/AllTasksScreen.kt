@@ -318,6 +318,7 @@ fun AllTasksScreen(
                             )
                             Text(
                                 text = when (sortOrder) {
+                                    TaskSortOrder.MANUAL -> if (isArabic) "ترتيب يدوي" else "Manual"
                                     TaskSortOrder.PRIORITY_HIGH_FIRST -> strings.priorityHigh
                                     TaskSortOrder.PRIORITY_LOW_FIRST -> strings.priorityLow
                                     TaskSortOrder.DATE_TIME -> strings.sortByDateTime
@@ -334,6 +335,13 @@ fun AllTasksScreen(
                             onDismissRequest = { showSortMenu = false },
                             modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
+                            DropdownMenuItem(
+                                text = { Text(if (isArabic) "✨ ترتيب يدوي (سحب وإفلات)" else "✨ Manual (Drag & Drop)") },
+                                onClick = {
+                                    viewModel.setSortOrder(TaskSortOrder.MANUAL)
+                                    showSortMenu = false
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text(strings.sortByPriority + " (الأعلى أولاً)") },
                                 onClick = {

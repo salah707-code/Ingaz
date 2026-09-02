@@ -4,29 +4,74 @@
     android:height="96dp"
     android:viewportWidth="96"
     android:viewportHeight="96">
-    <!-- Outer Glow Circle -->
+    
+    <!-- Light Celestial Radiant Backdrop -->
     <path
-        android:pathData="M48,6 A42,42 0 1,0 48,90 A42,42 0 1,0 48,6 Z">
+        android:pathData="M48,4 A44,44 0 1,0 48,92 A44,44 0 1,0 48,4 Z">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:type="linear"
-                android:startX="12"
-                android:startY="12"
-                android:endX="84"
-                android:endY="84">
-                <item android:color="#FF4F46E5" android:offset="0.0" />
-                <item android:color="#FF7C3AED" android:offset="0.5" />
-                <item android:color="#FFEC4899" android:offset="1.0" />
+                android:startX="0"
+                android:startY="0"
+                android:endX="96"
+                android:endY="96">
+                <item android:color="#FFFFFFFF" android:offset="0.0" />
+                <item android:color="#FFF0F4FF" android:offset="0.4" />
+                <item android:color="#FFE0E7FF" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
-    <!-- Inner Shield / Rounded Square Shape -->
+
+    <!-- Outer Radiant Border Ring -->
     <path
-        android:pathData="M24,20 L72,20 A8,8 0 0,1 80,28 L80,68 A12,12 0 0,1 68,80 L28,80 A12,12 0 0,1 16,68 L16,28 A8,8 0 0,1 24,20 Z"
-        android:fillColor="#151B2D" />
-    <!-- Dynamic Achievement Checkmark Ribbon -->
+        android:pathData="M48,6 A42,42 0 1,0 48,90 A42,42 0 1,0 48,6 Z"
+        android:strokeWidth="2.5">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="10"
+                android:startY="10"
+                android:endX="86"
+                android:endY="86">
+                <item android:color="#FF6366F1" android:offset="0.0" />
+                <item android:color="#FF8B5CF6" android:offset="0.5" />
+                <item android:color="#FF06B6D4" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Inner Luminous Crystal Card -->
     <path
-        android:pathData="M28,48 L42,62 L70,32"
+        android:pathData="M24,20 L72,20 A8,8 0 0,1 80,28 L80,68 A12,12 0 0,1 68,80 L28,80 A12,12 0 0,1 16,68 L16,28 A8,8 0 0,1 24,20 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="20"
+                android:startY="20"
+                android:endX="76"
+                android:endY="76">
+                <item android:color="#FFFFFFFF" android:offset="0.0" />
+                <item android:color="#FFF8FAFC" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Task List Lines (Light elegant styling) -->
+    <path
+        android:pathData="M26,32 L40,32"
+        android:strokeWidth="3.5"
+        android:strokeColor="#FF818CF8"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M26,42 L36,42"
+        android:strokeWidth="3.5"
+        android:strokeColor="#FFC7D2FE"
+        android:strokeLineCap="round" />
+
+    <!-- Vibrant Dynamic Enjaz Checkmark Ribbon -->
+    <path
+        android:pathData="M30,50 L44,64 L72,30"
         android:strokeWidth="7"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
@@ -34,18 +79,19 @@
         <aapt:attr name="android:strokeColor">
             <gradient
                 android:type="linear"
-                android:startX="28"
-                android:startY="32"
-                android:endX="70"
-                android:endY="62">
+                android:startX="30"
+                android:startY="30"
+                android:endX="72"
+                android:endY="64">
                 <item android:color="#FF10B981" android:offset="0.0" />
-                <item android:color="#FF38BDF8" android:offset="0.5" />
-                <item android:color="#FFF59E0B" android:offset="1.0" />
+                <item android:color="#FF06B6D4" android:offset="0.5" />
+                <item android:color="#FF4F46E5" android:offset="1.0" />
             </gradient>
         </aapt:attr>
     </path>
-    <!-- Sparkle Stars -->
+
+    <!-- Golden Achievement Star -->
     <path
-        android:pathData="M68,22 L70,26 L74,28 L70,30 L68,34 L66,30 L62,28 L66,26 Z"
-        android:fillColor="#FFFBBF24" />
+        android:pathData="M70,18 L72.5,23 L78,24 L74,28 L75,33.5 L70,30.5 L65,33.5 L66,28 L62,24 L67.5,23 Z"
+        android:fillColor="#FFF59E0B" />
 </vector>

@@ -43,6 +43,7 @@ enum class Priority(val titleAr: String, val titleEn: String, val colorHex: Long
 }
 
 enum class TaskSortOrder(val titleAr: String, val titleEn: String) {
+    MANUAL("ترتيب يدوي (سحب وإفلات)", "Manual (Drag & Drop)"),
     DATE_TIME("التاريخ والوقت", "Date & Time"),
     PRIORITY_HIGH_FIRST("الأولوية (الأعلى أولاً)", "Priority (Highest first)"),
     PRIORITY_LOW_FIRST("الأولوية (الأقل أولاً)", "Priority (Lowest first)"),
@@ -60,6 +61,7 @@ data class TaskEntity(
     val categoryIcon: String = "person",
     val categoryColor: Long = 0xFF4F46E5,
     val cardColorHex: Long = 0L, // 0L means follow category/default, or custom card color
+    val sortIndex: Int = 0, // For manual drag-and-drop ordering
     val date: Long, // Epoch day in millis representing 00:00:00 of the target date
     val timeHour: Int = -1, // -1 means no specific time set
     val timeMinute: Int = -1,

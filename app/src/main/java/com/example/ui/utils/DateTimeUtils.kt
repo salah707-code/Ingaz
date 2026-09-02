@@ -2,11 +2,82 @@ package com.example.ui.utils
 
 import com.example.data.model.TaskEntity
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.chrono.HijrahDate
+import java.time.temporal.ChronoField
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 object DateTimeUtils {
+
+    private val hijriMonthsAr = listOf(
+        "محرم", "صفر", "ربيع الأول", "ربيع الآخر",
+        "جمادى الأولى", "جمادى الآخرة", "رجب", "شعبان",
+        "رمضان", "شوال", "ذو القعدة", "ذو الحجة"
+    )
+
+    private val hijriMonthsEn = listOf(
+        "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
+        "Jumada al-Ula", "Jumada al-Akhirah", "Rajab", "Sha'ban",
+        "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"
+    )
+
+    fun toArabicNumerals(number: Int): String {
+        val arabicDigits = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
+        return number.toString().map { char ->
+            if (char in '0'..'9') arabicDigits[char - '0'] else char
+        }.joinToString("")
+    }
+
+    fun toArabicNumerals(text: String): String {
+        val arabicDigits = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
+        return text.map { char ->
+            if (char in '0'..'9') arabicDigits[char - '0'] else char
+        }.joinToString("")
+    }
+
+    fun getHijriDate(dateMillis: Long): Triple<Int, Int, Int> {
+        return try {
+            val localDate = Instant.ofEpochMilli(dateMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+            val hijrahDate = HijrahDate.from(localDate)
+            val year = hijrahDate.get(ChronoField.YEAR)
+            val month = hijrahDate.get(ChronoField.MONTH_OF_YEAR)
+            val day = hijrahDate.get(ChronoField.DAY_OF_MONTH)
+            Triple(day, month, year)
+        } catch (e: Exception) {
+            // Algorithmic estimate fallback if Hijrah Chronology is unavailable
+            val cal = Calendar.getInstance().apply { timeInMillis = dateMillis }
+            val year = cal.get(Calendar.YEAR)
+            val month = cal.get(Calendar.MONTH) + 1
+            val day = cal.get(Calendar.DAY_OF_MONTH)
+            val approxHijriYear = ((year - 622) * 33 / 32)
+            Triple(day.coerceIn(1, 30), month.coerceIn(1, 12), approxHijriYear)
+        }
+    }
+
+    fun formatHijriDate(dateMillis: Long, isArabic: Boolean = true): String {
+        val (day, month, year) = getHijriDate(dateMillis)
+        val monthIdx = (month - 1).coerceIn(0, 11)
+        return if (isArabic) {
+            val dayStr = toArabicNumerals(day)
+            val yearStr = toArabicNumerals(year)
+            val monthName = hijriMonthsAr[monthIdx]
+            "$dayStr $monthName $yearStr هـ"
+        } else {
+            val monthName = hijriMonthsEn[monthIdx]
+            "$day $monthName $year AH"
+        }
+    }
+
+    fun formatBothDates(dateMillis: Long, isArabic: Boolean = true): String {
+        val hijri = formatHijriDate(dateMillis, isArabic)
+        val gregorian = formatFullDate(dateMillis, isArabic)
+        return if (isArabic) "$hijri • $gregorian" else "$hijri • $gregorian"
+    }
 
     fun getTodayStartMillis(): Long {
         return Calendar.getInstance().apply {
@@ -98,7 +169,8 @@ object DateTimeUtils {
         } else {
             if (isPm) "PM" else "AM"
         }
-        return "$displayHour:$formattedMin $amPm"
+        val rawTime = "$displayHour:$formattedMin $amPm"
+        return if (isArabic) toArabicNumerals(rawTime) else rawTime
     }
 
     fun getTimeRemainingString(task: TaskEntity, isArabic: Boolean): String {
@@ -130,10 +202,10 @@ object DateTimeUtils {
         val days = hours / 24
 
         return when {
-            minutes < 60 -> if (isArabic) "بعد $minutes دقيقة" else "In $minutes min"
-            hours < 24 -> if (isArabic) "بعد $hours ساعة" else "In $hours hrs"
+            minutes < 60 -> if (isArabic) "بعد ${toArabicNumerals(minutes.toInt())} دقيقة" else "In $minutes min"
+            hours < 24 -> if (isArabic) "بعد ${toArabicNumerals(hours.toInt())} ساعة" else "In $hours hrs"
             days == 1L -> if (isArabic) "غداً" else "Tomorrow"
-            days < 7 -> if (isArabic) "بعد $days أيام" else "In $days days"
+            days < 7 -> if (isArabic) "بعد ${toArabicNumerals(days.toInt())} أيام" else "In $days days"
             else -> formatDateDisplay(task.date, isArabic)
         }
     }

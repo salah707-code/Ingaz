@@ -1,9 +1,12 @@
 package com.example.ui.components
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -27,7 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
@@ -36,7 +39,6 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.outlined.StickyNote2
 import androidx.compose.material3.Card
@@ -60,6 +62,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -86,6 +89,7 @@ fun TaskCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    taskIndex: Int? = null,
     layoutStyle: CardLayoutStyle = CardLayoutStyle.STANDARD,
     shadowStyle: CardShadowStyle = CardShadowStyle.MEDIUM,
     borderStyle: CardBorderStyle = CardBorderStyle.SUBTLE_LINE,
@@ -101,6 +105,7 @@ fun TaskCard(
                 onEdit = onEdit,
                 onDelete = onDelete,
                 modifier = modifier,
+                taskIndex = taskIndex,
                 shadowStyle = shadowStyle,
                 borderStyle = borderStyle,
                 iconThemeStyle = iconThemeStyle,
@@ -115,6 +120,7 @@ fun TaskCard(
                 onEdit = onEdit,
                 onDelete = onDelete,
                 modifier = modifier,
+                taskIndex = taskIndex,
                 shadowStyle = shadowStyle,
                 borderStyle = borderStyle,
                 iconThemeStyle = iconThemeStyle,
@@ -129,6 +135,7 @@ fun TaskCard(
                 onEdit = onEdit,
                 onDelete = onDelete,
                 modifier = modifier,
+                taskIndex = taskIndex,
                 shadowStyle = shadowStyle,
                 borderStyle = borderStyle,
                 iconThemeStyle = iconThemeStyle,
@@ -143,6 +150,7 @@ fun TaskCard(
                 onEdit = onEdit,
                 onDelete = onDelete,
                 modifier = modifier,
+                taskIndex = taskIndex,
                 shadowStyle = shadowStyle,
                 borderStyle = borderStyle,
                 iconThemeStyle = iconThemeStyle,
@@ -153,7 +161,25 @@ fun TaskCard(
     }
 }
 
-// 1. STANDARD CARD - WITH INLINE EXPANSION & THEME-AWARE COLORS
+private fun copyTaskNoteToClipboard(context: Context, task: TaskEntity, isArabic: Boolean) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+    val textToCopy = buildString {
+        append(task.title)
+        if (task.description.isNotBlank()) {
+            append("\n")
+            append(task.description)
+        }
+    }
+    val clip = ClipData.newPlainText(task.title, textToCopy)
+    clipboard?.setPrimaryClip(clip)
+    Toast.makeText(
+        context,
+        if (isArabic) "تم نسخ الملاحظة إلى الحافظة 📋" else "Note copied to clipboard 📋",
+        Toast.LENGTH_SHORT
+    ).show()
+}
+
+// 1. STANDARD CARD - WITH AUTO-NUMBERING, COLOR HARMONY & NOTE COPYING
 @Composable
 fun TaskCardStandard(
     task: TaskEntity,
@@ -161,12 +187,14 @@ fun TaskCardStandard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    taskIndex: Int? = null,
     shadowStyle: CardShadowStyle = CardShadowStyle.MEDIUM,
     borderStyle: CardBorderStyle = CardBorderStyle.SUBTLE_LINE,
     iconThemeStyle: IconThemeStyle = IconThemeStyle.COLORED_EMOJI,
     cornerStyle: CardCornerStyle = CardCornerStyle.ROUNDED,
     isArabic: Boolean = true
 ) {
+    val context = LocalContext.current
     val strings = LocalAppStrings.current
     var isExpanded by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
@@ -175,25 +203,37 @@ fun TaskCardStandard(
     val cardAccentColor = Color(effectiveColorHex)
     val priorityColor = Color(task.priority.colorHex)
 
-    // Theme-Aware Container Color
+    // Accurate theme-aware container tinting
     val baseSurface = MaterialTheme.colorScheme.surface
-    val surfaceBg = if (task.isCompleted) {
-        baseSurface.copy(alpha = 0.65f)
-    } else if (task.cardColorHex != 0L) {
-        cardAccentColor.copy(alpha = 0.08f)
-    } else {
-        baseSurface
+    val surfaceBg = when {
+        task.isCompleted -> baseSurface.copy(alpha = 0.7f)
+        task.cardColorHex != 0L -> {
+            // Harmonic blend of selected card color with surface
+            cardAccentColor.copy(alpha = 0.12f)
+        }
+        else -> baseSurface
     }
 
     val cardShape = RoundedCornerShape(cornerStyle.cornerRadiusDp.dp)
 
     val cardBorderModifier = when (borderStyle) {
-        CardBorderStyle.NONE -> Modifier
-        CardBorderStyle.SUBTLE_LINE -> Modifier.border(0.8.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f), cardShape)
+        CardBorderStyle.NONE -> {
+            if (task.cardColorHex != 0L && !task.isCompleted) {
+                Modifier.border(1.dp, cardAccentColor.copy(alpha = 0.35f), cardShape)
+            } else Modifier
+        }
+        CardBorderStyle.SUBTLE_LINE -> {
+            val borderColor = if (task.cardColorHex != 0L && !task.isCompleted) {
+                cardAccentColor.copy(alpha = 0.4f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+            }
+            Modifier.border(0.8.dp, borderColor, cardShape)
+        }
         CardBorderStyle.COLORED_BORDER -> Modifier.border(1.5.dp, cardAccentColor.copy(alpha = 0.7f), cardShape)
         CardBorderStyle.GLOW_BORDER -> Modifier.border(
             width = 2.dp,
-            brush = Brush.linearGradient(listOf(cardAccentColor, cardAccentColor.copy(alpha = 0.25f))),
+            brush = Brush.linearGradient(listOf(cardAccentColor, cardAccentColor.copy(alpha = 0.3f))),
             shape = cardShape
         )
     }
@@ -206,14 +246,14 @@ fun TaskCardStandard(
             .shadow(elevation = shadowElevation, shape = cardShape, spotColor = cardAccentColor.copy(alpha = 0.25f))
             .then(cardBorderModifier)
             .clip(cardShape)
-            .clickable { isExpanded = !isExpanded } // Expands inline when clicked!
+            .clickable { isExpanded = !isExpanded }
             .animateContentSize(spring(dampingRatio = 0.8f, stiffness = 400f))
             .testTag("task_card_${task.id}"),
         shape = cardShape,
         colors = CardDefaults.cardColors(containerColor = surfaceBg)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Top Row: Category Chip & Priority & Options
+            // Top Row: Auto-numbering + Category Chip & Priority & Options
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -223,18 +263,38 @@ fun TaskCardStandard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Auto-numbering badge
+                    if (taskIndex != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(cardAccentColor.copy(alpha = 0.18f))
+                                .border(1.dp, cardAccentColor.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 7.dp, vertical = 3.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "#${if (isArabic) DateTimeUtils.toArabicNumerals(taskIndex) else taskIndex.toString()}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = cardAccentColor,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+
                     // Category Badge
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(cardAccentColor.copy(alpha = 0.15f))
                             .border(1.dp, cardAccentColor.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                            .padding(horizontal = 9.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
                             if (iconThemeStyle == IconThemeStyle.COLORED_EMOJI) {
                                 Text(
@@ -322,6 +382,20 @@ fun TaskCardStandard(
 
                 // Expand Indicator and Menu
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (task.description.isNotBlank()) {
+                        IconButton(
+                            onClick = { copyTaskNoteToClipboard(context, task, isArabic) },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = "Copy Note",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
+                    }
+
                     IconButton(
                         onClick = { isExpanded = !isExpanded },
                         modifier = Modifier.size(28.dp)
@@ -352,6 +426,18 @@ fun TaskCardStandard(
                             onDismissRequest = { showMenu = false },
                             modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
+                            if (task.description.isNotBlank()) {
+                                DropdownMenuItem(
+                                    text = { Text(if (isArabic) "نسخ الملاحظة" else "Copy Note", color = MaterialTheme.colorScheme.onSurface) },
+                                    onClick = {
+                                        showMenu = false
+                                        copyTaskNoteToClipboard(context, task, isArabic)
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = cardAccentColor)
+                                    }
+                                )
+                            }
                             DropdownMenuItem(
                                 text = { Text(strings.editTask, color = MaterialTheme.colorScheme.onSurface) },
                                 onClick = {
@@ -450,7 +536,7 @@ fun TaskCardStandard(
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
                         .padding(12.dp)
                 ) {
-                    // Full Date & Time detail
+                    // Full Date & Hijri + Time detail
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -461,7 +547,7 @@ fun TaskCardStandard(
                             tint = cardAccentColor,
                             modifier = Modifier.size(15.dp)
                         )
-                        val dateFull = DateTimeUtils.formatFullDate(task.date, isArabic)
+                        val dateFull = DateTimeUtils.formatBothDates(task.date, isArabic)
                         val timeFull = if (task.timeHour in 0..23 && task.timeMinute in 0..59) {
                             " • ${DateTimeUtils.formatTimeDisplay(task.timeHour, task.timeMinute, isArabic)}"
                         } else " • ${strings.allDay}"
@@ -538,12 +624,24 @@ fun TaskCardStandard(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Inline Action Bar (Edit / Delete / Complete)
+                    // Inline Action Bar (Copy / Edit / Delete)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        if (task.description.isNotBlank()) {
+                            TextButton(
+                                onClick = { copyTaskNoteToClipboard(context, task, isArabic) }
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = cardAccentColor, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = if (isArabic) "نسخ الملاحظة" else "Copy Note", color = cardAccentColor, style = MaterialTheme.typography.labelMedium)
+                            }
+
+                            Spacer(modifier = Modifier.width(6.dp))
+                        }
+
                         TextButton(
                             onClick = onDelete
                         ) {
@@ -552,7 +650,7 @@ fun TaskCardStandard(
                             Text(text = strings.delete, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
                         }
 
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
 
                         OutlinedButton(
                             onClick = onEdit
@@ -610,7 +708,7 @@ fun TaskCardStandard(
     }
 }
 
-// 2. NOTES VIEW (نمط الملاحظات - بطاقات ملونة مميزة وتركيز على الملاحظة)
+// 2. NOTES VIEW (نمط الملاحظات - بطاقات ملونة مميزة وتركيز على الملاحظة ونسخها)
 @Composable
 fun TaskCardNotesView(
     task: TaskEntity,
@@ -618,12 +716,14 @@ fun TaskCardNotesView(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    taskIndex: Int? = null,
     shadowStyle: CardShadowStyle = CardShadowStyle.MEDIUM,
     borderStyle: CardBorderStyle = CardBorderStyle.SUBTLE_LINE,
     iconThemeStyle: IconThemeStyle = IconThemeStyle.COLORED_EMOJI,
     cornerStyle: CardCornerStyle = CardCornerStyle.ROUNDED,
     isArabic: Boolean = true
 ) {
+    val context = LocalContext.current
     val strings = LocalAppStrings.current
     var isExpanded by remember { mutableStateOf(false) }
 
@@ -631,20 +731,26 @@ fun TaskCardNotesView(
     val cardAccentColor = Color(effectiveColorHex)
     val cardShape = RoundedCornerShape(cornerStyle.cornerRadiusDp.dp)
 
+    val surfaceBg = if (task.isCompleted) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+    } else {
+        cardAccentColor.copy(alpha = 0.12f)
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .shadow(elevation = shadowStyle.elevationDp.dp, shape = cardShape, spotColor = cardAccentColor.copy(alpha = 0.35f))
-            .border(1.5.dp, cardAccentColor.copy(alpha = 0.5f), cardShape)
+            .border(1.5.dp, cardAccentColor.copy(alpha = 0.55f), cardShape)
             .clip(cardShape)
             .clickable { isExpanded = !isExpanded }
             .animateContentSize(spring(dampingRatio = 0.8f, stiffness = 400f))
             .testTag("task_card_notes_${task.id}"),
         shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = surfaceBg)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Top Accent Band (Note header style)
+            // Top Accent Band
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -653,7 +759,7 @@ fun TaskCardNotesView(
             )
 
             Column(modifier = Modifier.padding(16.dp)) {
-                // Header with Note Icon & Category Chip & Checkbox
+                // Header with Auto-Number, Category Chip & Checkbox
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -663,10 +769,27 @@ fun TaskCardNotesView(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        if (taskIndex != null) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(cardAccentColor.copy(alpha = 0.22f))
+                                    .padding(horizontal = 7.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = "#${if (isArabic) DateTimeUtils.toArabicNumerals(taskIndex) else taskIndex.toString()}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = cardAccentColor,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(cardAccentColor.copy(alpha = 0.15f))
+                                .background(cardAccentColor.copy(alpha = 0.18f))
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Row(
@@ -695,7 +818,7 @@ fun TaskCardNotesView(
                         Icon(
                             imageVector = Icons.Outlined.StickyNote2,
                             contentDescription = "Note",
-                            tint = cardAccentColor.copy(alpha = 0.8f),
+                            tint = cardAccentColor,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -736,14 +859,14 @@ fun TaskCardNotesView(
                     textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                 )
 
-                // Note Body (Prominently displayed)
+                // Note Body
                 if (task.description.isNotBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
-                            .background(cardAccentColor.copy(alpha = 0.08f))
+                            .background(cardAccentColor.copy(alpha = 0.1f))
                             .padding(10.dp)
                     ) {
                         Text(
@@ -770,9 +893,17 @@ fun TaskCardNotesView(
                     )
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        if (task.description.isNotBlank()) {
+                            IconButton(
+                                onClick = { copyTaskNoteToClipboard(context, task, isArabic) },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = cardAccentColor, modifier = Modifier.size(16.dp))
+                            }
+                        }
                         IconButton(onClick = onEdit, modifier = Modifier.size(28.dp)) {
                             Icon(Icons.Default.Edit, contentDescription = "Edit", tint = cardAccentColor, modifier = Modifier.size(16.dp))
                         }
@@ -794,19 +925,27 @@ fun TaskCardLargeGrid(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    taskIndex: Int? = null,
     shadowStyle: CardShadowStyle = CardShadowStyle.MEDIUM,
     borderStyle: CardBorderStyle = CardBorderStyle.SUBTLE_LINE,
     iconThemeStyle: IconThemeStyle = IconThemeStyle.COLORED_EMOJI,
     cornerStyle: CardCornerStyle = CardCornerStyle.ROUNDED,
     isArabic: Boolean = true
 ) {
-    val strings = LocalAppStrings.current
+    val context = LocalContext.current
     var isExpanded by remember { mutableStateOf(false) }
 
     val effectiveColorHex = if (task.cardColorHex != 0L) task.cardColorHex else task.categoryColor
     val cardAccentColor = Color(effectiveColorHex)
-    val priorityColor = Color(task.priority.colorHex)
     val cardShape = RoundedCornerShape(cornerStyle.cornerRadiusDp.dp)
+
+    val surfaceBg = if (task.isCompleted) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+    } else if (task.cardColorHex != 0L) {
+        cardAccentColor.copy(alpha = 0.12f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
 
     Card(
         modifier = modifier
@@ -818,7 +957,7 @@ fun TaskCardLargeGrid(
             .animateContentSize(spring(dampingRatio = 0.8f, stiffness = 400f))
             .testTag("task_card_grid_${task.id}"),
         shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = surfaceBg)
     ) {
         Column(
             modifier = Modifier
@@ -831,32 +970,54 @@ fun TaskCardLargeGrid(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(cardAccentColor.copy(alpha = 0.18f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        if (iconThemeStyle == IconThemeStyle.COLORED_EMOJI) {
-                            Text(CategoryIcons.getEmoji(task.categoryIcon), fontSize = 13.sp)
-                        } else {
-                            Icon(
-                                imageVector = CategoryIcons.getIcon(task.categoryIcon),
-                                contentDescription = null,
-                                tint = cardAccentColor,
-                                modifier = Modifier.size(13.dp)
+                    if (taskIndex != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(cardAccentColor.copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "#${if (isArabic) DateTimeUtils.toArabicNumerals(taskIndex) else taskIndex.toString()}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = cardAccentColor,
+                                fontSize = 10.sp
                             )
                         }
-                        Text(
-                            text = task.category,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = cardAccentColor
-                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(cardAccentColor.copy(alpha = 0.18f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            if (iconThemeStyle == IconThemeStyle.COLORED_EMOJI) {
+                                Text(CategoryIcons.getEmoji(task.categoryIcon), fontSize = 13.sp)
+                            } else {
+                                Icon(
+                                    imageVector = CategoryIcons.getIcon(task.categoryIcon),
+                                    contentDescription = null,
+                                    tint = cardAccentColor,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                            Text(
+                                text = task.category,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = cardAccentColor
+                            )
+                        }
                     }
                 }
 
@@ -922,6 +1083,14 @@ fun TaskCardLargeGrid(
                 )
 
                 Row {
+                    if (task.description.isNotBlank()) {
+                        IconButton(
+                            onClick = { copyTaskNoteToClipboard(context, task, isArabic) },
+                            modifier = Modifier.size(26.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = cardAccentColor, modifier = Modifier.size(15.dp))
+                        }
+                    }
                     IconButton(onClick = onEdit, modifier = Modifier.size(26.dp)) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit", tint = cardAccentColor, modifier = Modifier.size(15.dp))
                     }
@@ -942,16 +1111,26 @@ fun TaskCardCompactList(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    taskIndex: Int? = null,
     shadowStyle: CardShadowStyle = CardShadowStyle.MEDIUM,
     borderStyle: CardBorderStyle = CardBorderStyle.SUBTLE_LINE,
     iconThemeStyle: IconThemeStyle = IconThemeStyle.COLORED_EMOJI,
     cornerStyle: CardCornerStyle = CardCornerStyle.ROUNDED,
     isArabic: Boolean = true
 ) {
+    val context = LocalContext.current
     var isExpanded by remember { mutableStateOf(false) }
     val effectiveColorHex = if (task.cardColorHex != 0L) task.cardColorHex else task.categoryColor
     val cardAccentColor = Color(effectiveColorHex)
     val cardShape = RoundedCornerShape(cornerStyle.cornerRadiusDp.dp)
+
+    val surfaceBg = if (task.isCompleted) {
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+    } else if (task.cardColorHex != 0L) {
+        cardAccentColor.copy(alpha = 0.1f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
 
     Card(
         modifier = modifier
@@ -963,7 +1142,7 @@ fun TaskCardCompactList(
             .animateContentSize(spring(dampingRatio = 0.8f, stiffness = 400f))
             .testTag("task_card_compact_${task.id}"),
         shape = cardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = surfaceBg)
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
             Row(
@@ -976,6 +1155,16 @@ fun TaskCardCompactList(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    if (taskIndex != null) {
+                        Text(
+                            text = "#${if (isArabic) DateTimeUtils.toArabicNumerals(taskIndex) else taskIndex.toString()}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = cardAccentColor,
+                            fontSize = 11.sp
+                        )
+                    }
+
                     Box(
                         modifier = Modifier
                             .size(24.dp)
@@ -1019,6 +1208,14 @@ fun TaskCardCompactList(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (task.description.isNotBlank()) {
+                        IconButton(
+                            onClick = { copyTaskNoteToClipboard(context, task, isArabic) },
+                            modifier = Modifier.size(26.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = cardAccentColor, modifier = Modifier.size(15.dp))
+                        }
+                    }
                     IconButton(onClick = onEdit, modifier = Modifier.size(26.dp)) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit", tint = cardAccentColor, modifier = Modifier.size(15.dp))
                     }
